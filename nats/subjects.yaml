@@ -1,0 +1,40 @@
+# Starship OS NATS Subject Topology
+# Agent communication bus subjects
+
+subjects:
+  agent:
+    proxy:
+      command: "starship.agent.proxy.command.*"
+      event: "starship.agent.proxy.event.*"
+      status: "starship.agent.proxy.status"
+    romi:
+      command: "starship.agent.romi.command.*"
+      event: "starship.agent.romi.event.*"
+      status: "starship.agent.romi.status"
+    ergo:
+      command: "starship.agent.ergo.command.*"
+      event: "starship.agent.ergo.event.*"
+      status: "starship.agent.ergo.status"
+  telemetry:
+    cpu: "starship.telemetry.cpu"
+    mem: "starship.telemetry.mem"
+    disk: "starship.telemetry.disk"
+    net: "starship.telemetry.net"
+
+# Command types (used as wildcard *)
+commands:
+  - ping
+  - status
+  - report
+  - configure
+  - execute
+  - stop
+
+# Event types
+events:
+  - started
+  - stopped
+  - error
+  - warning
+  - completed
+  - heartbeat

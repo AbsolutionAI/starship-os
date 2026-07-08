@@ -1,0 +1,29 @@
+# Ergo Agent (Automation)
+# Scheduled tasks, event-triggered workflows
+# Maps to OpenFrame's VoltAgent (automation)
+
+name: ergo
+role: automation_agent
+model: jeffgreen311/eve-v2-unleashed-qwen3.5-8b-liberated-4k-4b-merged
+provider: ollama
+
+capabilities:
+  - task_scheduling
+  - workflow_orchestration
+  - event_driven_automation
+  - backup_management
+  - report_generation
+
+skills:
+  - ergo-automation
+
+toolsets:
+  - terminal
+  - file_operations
+  - cronjob
+
+nats:
+  subjects:
+    command: "starship.agent.ergo.command.>"
+    event: "starship.agent.ergo.event.>"
+    status: "starship.agent.ergo.status"

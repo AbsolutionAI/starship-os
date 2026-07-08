@@ -1,0 +1,31 @@
+# Romi Agent (Client)
+# User-facing interface, natural language interaction
+# Maps to OpenFrame's Fae (client AI)
+
+name: romi
+role: client_agent
+model: qwen2.5:7b
+provider: ollama
+
+capabilities:
+  - natural_language_interface
+  - task_explanation
+  - status_reporting
+  - preference_management
+  - user_modeling
+
+skills:
+  - knowledge-store
+  - romi-interface
+
+toolsets:
+  - file_operations
+  - web_search
+  - memory
+  - skills
+
+nats:
+  subjects:
+    command: "starship.agent.romi.command.>"
+    event: "starship.agent.romi.event.>"
+    status: "starship.agent.romi.status"

@@ -1,0 +1,14 @@
+[Unit]
+Description=Starship OS StarAgent (System Monitor)
+After=nats.service
+Requires=nats.service
+
+[Service]
+Type=simple
+User=tech
+ExecStart=/home/tech/starship-os/agent/target/release/staragent
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=starship-agent-mesh.target

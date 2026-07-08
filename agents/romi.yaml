@@ -23,6 +23,7 @@ toolsets:
   - web_search
   - memory
   - skills
+  - nats
 
 nats:
   subjects:

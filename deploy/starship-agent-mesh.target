@@ -1,0 +1,4 @@
+[Unit]
+Description=Starship OS Agent Mesh
+Requires=nats.service staragent.service starship-agent@proxy.service starship-agent@romi.service starship-agent@ergo.service
+After=nats.service

@@ -1,13 +1,17 @@
 [Unit]
-Description=Agnetic OS Web Dashboard — HTTP server on port 8899
+Description=Starship OS Web Dashboard — HTTP server on port 8788
 After=agnetic-status-bridge.service
 Requires=agnetic-status-bridge.service
 PartOf=agnetic-dashboard.target
 
 [Service]
 Type=simple
-User=tech
-ExecStart=/home/tech/.hermes/hermes-agent/venv/bin/python3 /home/tech/agnetic-os/dashboard/server.py
+User=agnetic
+Environment=DASHBOARD_PORT=8788
+Environment=AGNETIC_DASHBOARD_PORT=8788
+Environment=STARSHIP_ROOT=/opt/starship
+Environment=AGNETIC_ROOT=/opt/starship
+ExecStart=/opt/starship/venv/bin/python3 /opt/starship/lib/starship/dashboard/server.py
 Restart=on-failure
 RestartSec=5
 

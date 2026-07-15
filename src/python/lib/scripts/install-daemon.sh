@@ -240,7 +240,7 @@ for unit in agnetic-nats agnetic-staragent agnetic-agent@proxy agnetic-agent@rom
 done
 
 echo ""
-echo -e "  Dashboard: http://localhost:8899"
+echo -e "  Dashboard: http://localhost:8788"
 echo -e "  NATS:      nats://localhost:4222"
 echo -e "  CLI:       agneticctl --help"
 echo ""

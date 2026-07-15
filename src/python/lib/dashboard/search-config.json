@@ -2,7 +2,7 @@
   "apps": [
     {"name": "Ollama", "url": "http://localhost:11435", "description": "LLM Server & Model Management"},
     {"name": "NATS Monitoring", "url": "http://localhost:8222", "description": "Message Broker Dashboard"},
-    {"name": "Starship Dashboard", "url": "http://localhost:8899", "description": "Starship OS Web UI"}
+    {"name": "Starship Dashboard", "url": "http://localhost:8788", "description": "Starship OS Web UI"}
   ],
   "bookmarks": [
     {"name": "GitHub", "url": "https://github.com", "description": "Source control & collaboration"},

@@ -38,7 +38,7 @@ if ! pgrep -f "$PROJECT_DIR/dashboard/server.py" > /dev/null 2>&1; then
     echo "[4/4] Starting dashboard server..."
     nohup "$PROJECT_DIR/.venv/bin/python3" \
         "$PROJECT_DIR/dashboard/server.py" > "$PROJECT_DIR/logs/dashboard.log" 2>&1 &
-    echo "  Dashboard at http://localhost:8899"
+    echo "  Dashboard at http://localhost:8788"
 fi
 
 echo ""

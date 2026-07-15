@@ -40,7 +40,7 @@ dev: cli
 	setsid .venv/bin/python3 agents/agent_daemon.py ergo > logs/agents-ergo.log 2>&1 < /dev/null &
 	setsid .venv/bin/python3 tray/agnetic-status.py > logs/status-bridge.log 2>&1 < /dev/null &
 	setsid .venv/bin/python3 scripts/message_history.py > logs/message-history.log 2>&1 < /dev/null &
-	setsid .venv/bin/python3 dashboard/server.py > logs/dashboard.log 2>&1 < /dev/null &
+	DASHBOARD_PORT=8788 setsid .venv/bin/python3 dashboard/server.py > logs/dashboard.log 2>&1 < /dev/null &
 	sleep 2
 	@$(MAKE) status
 
@@ -55,7 +55,7 @@ stop:
 
 status:
 	@echo ""
-	@echo "=== Agnetic Starship OS — Service Status ==="
+	@echo "=== Starship OS — Service Status ==="
 	@echo ""
 	@pgrep nats-server > /dev/null && echo "  ● nats-server     — running" || echo "  ● nats-server     — stopped"
 	@pgrep staragent > /dev/null && echo "  ● staragent       — running" || echo "  ● staragent       — stopped"
@@ -64,7 +64,7 @@ status:
 	@pgrep -f "agent_daemon.py ergo" > /dev/null && echo "  ● agent ergo      — running" || echo "  ● agent ergo      — stopped"
 	@pgrep -f "agnetic-status.py" > /dev/null && echo "  ● status-bridge   — running" || echo "  ● status-bridge   — stopped"
 	@pgrep -f "message_history.py" > /dev/null && echo "  ● message-history — running" || echo "  ● message-history — stopped"
-	@ss -tlnp 2>/dev/null | grep -q 8899 && echo "  ● dashboard       — running (:8899)" || echo "  ● dashboard       — stopped"
+	@ss -tlnp 2>/dev/null | grep -q 8788 && echo "  ● dashboard       — running (:8788)" || echo "  ● dashboard       — stopped"
 	@echo ""
 	@echo "=== Ollama Models ==="
 	@$(HOME)/.local/bin/ollama list 2>/dev/null || ollama list 2>/dev/null || echo "  (ollama not available)"

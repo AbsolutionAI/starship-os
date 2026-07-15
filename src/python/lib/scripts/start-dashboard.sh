@@ -18,7 +18,7 @@ STATUS_PID=$!
 echo "  PID $STATUS_PID"
 
 # 2. Web dashboard server
-echo "[2/2] Starting web dashboard on http://localhost:8899"
+echo "[2/2] Starting web dashboard on http://localhost:8788"
 pkill -f "dashboard/server.py" 2>/dev/null || true
 nohup "$PROJECT_DIR/.venv/bin/python3" "$PROJECT_DIR/dashboard/server.py" \
   > "$LOG_DIR/dashboard-server.log" 2>&1 &
@@ -28,4 +28,4 @@ echo "  PID $DASH_PID"
 echo ""
 echo "=== Dashboard running ==="
 echo "  Status bridge:  PID $STATUS_PID"
-echo "  Web:            http://localhost:8899"
+echo "  Web:            http://localhost:8788"

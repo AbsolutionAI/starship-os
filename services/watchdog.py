@@ -73,7 +73,7 @@ DEFAULT_SERVICES = {
         "process_name": "agent_daemon.py ergo",
     },
     "dashboard": {
-        "check": ["port:8899", "http:http://127.0.0.1:8899/api/health"],
+        "check": ["port:8788", "http:http://127.0.0.1:8788/api/health"],
         "command": "python3 dashboard/server.py",
         "process_name": "dashboard",
     },

@@ -17,7 +17,7 @@ log = logging.getLogger("agnetic-dash")
 
 NATS_URL = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
-PORT = int(os.getenv("DASHBOARD_PORT", "8899"))
+PORT = int(os.getenv("DASHBOARD_PORT", os.getenv("AGNETIC_DASHBOARD_PORT", "8788")))
 STATUS_FILE = Path("/tmp/agnetic-status.json")
 GPU_STATE = Path("/tmp/agnetic-gpu-state.json")
 HISTORY_DIR = Path("/tmp/agnetic-history")

@@ -113,5 +113,5 @@ ollama:
 connections_file: /opt/agnetic/lib/connections.yaml
 
 dashboard:
-  port: 8899
+  port: 8788
   host: 0.0.0.0

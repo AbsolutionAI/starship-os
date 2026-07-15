@@ -1,22 +1,25 @@
 [Unit]
-Description=Agnetic Starship OS - Web Dashboard
+Description=Starship OS - Web Dashboard (:8788)
 After=network.target agnetic-nats.service
 Requires=agnetic-nats.service
-Documentation=https://github.com/andromi-hash/agnetic-os
+Documentation=https://github.com/andromi-hash/starship-os
 
 [Service]
 Type=simple
-ExecStart=/opt/agnetic/venv/bin/python3 /opt/agnetic/lib/agnetic/dashboard/server.py
+ExecStart=/opt/starship/venv/bin/python3 /opt/starship/lib/starship/dashboard/server.py
 Restart=always
 RestartSec=5
 User=agnetic
 Group=agnetic
-Environment=PYTHONPATH=/opt/agnetic/lib/agnetic
-Environment=DASHBOARD_PORT=8899
-WorkingDirectory=/opt/agnetic/lib/agnetic
+Environment=PYTHONPATH=/opt/starship/lib/starship
+Environment=STARSHIP_ROOT=/opt/starship
+Environment=AGNETIC_ROOT=/opt/starship
+Environment=DASHBOARD_PORT=8788
+Environment=AGNETIC_DASHBOARD_PORT=8788
+WorkingDirectory=/opt/starship/lib/starship
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/var/log/agnetic /tmp
+ReadWritePaths=/var/log/starship /var/log/agnetic /tmp
 ProtectHome=true
 KillMode=mixed
 TimeoutStopSec=10

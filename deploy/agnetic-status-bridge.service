@@ -1,14 +1,16 @@
 [Unit]
-Description=Agnetic OS Status Bridge — NATS telemetry to JSON file
-After=nats.service staragent.service
-Requires=nats.service
+Description=Starship OS Status Bridge — NATS telemetry to JSON file
+After=agnetic-nats.service
+Requires=agnetic-nats.service
 PartOf=agnetic-dashboard.target
 
 [Service]
 Type=simple
-User=tech
+User=agnetic
 Environment=NATS_URL=nats://127.0.0.1:4222
-ExecStart=/home/tech/.hermes/hermes-agent/venv/bin/python3 /home/tech/agnetic-os/tray/agnetic-status.py
+Environment=STARSHIP_ROOT=/opt/starship
+Environment=AGNETIC_ROOT=/opt/starship
+ExecStart=/opt/starship/venv/bin/python3 /opt/starship/lib/starship/tray/agnetic-status.py
 Restart=on-failure
 RestartSec=5
 

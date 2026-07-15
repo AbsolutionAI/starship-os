@@ -40,7 +40,7 @@ make deb
 ollama create Eve-V2-Unleashed -f config/models/Eve-V2-Unleashed.Modelfile
 ```
 
-Open `http://localhost:8788` (2.1 C2) or `http://localhost:8899` (legacy 2.0 dashboard). CLI: `agneticctl` (rename target: `starshipctl`).
+Open `http://localhost:8788`. CLI: `starshipctl` (compat: `agneticctl`).
 
 ---
 
@@ -51,7 +51,7 @@ Open `http://localhost:8788` (2.1 C2) or `http://localhost:8899` (legacy 2.0 das
 │                    User Interfaces                          │
 │  ┌──────────┐  ┌──────────────┐  ┌────────────────────┐   │
 │  │ CLI      │  │ Dashboard    │  │ agneticctl         │   │
-│  │ (chat)   │  │ (web :8899)  │  │ (Go/Cobra)         │   │
+│  │ (chat)   │  │ (web :8788)  │  │ starshipctl        │   │
 │  └────┬─────┘  └──────┬───────┘  └─────────┬──────────┘   │
 │       └────────────────┼────────────────────┘              │
 │                        │                                    │
@@ -188,7 +188,7 @@ The tool system enforces strict security constraints:
 
 ## Dashboard
 
-The web dashboard at `http://localhost:8899` provides a real-time command center for the entire agent mesh.
+The web dashboard at `http://localhost:8788` provides a real-time command center for the entire agent mesh.
 
 ### Features
 
@@ -344,7 +344,7 @@ nats:
   jetstream: true
 
 dashboard:
-  port: 8899
+  port: 8788
   host: 0.0.0.0
 ```
 

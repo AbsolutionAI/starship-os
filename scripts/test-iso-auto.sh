@@ -28,7 +28,7 @@ runcmd:
   - cd /home/tech/agnetic-os && make start
   - sleep 10
   - agneticctl status > /tmp/test-results.txt 2>&1
-  - curl -s http://localhost:8899/api/health >> /tmp/test-results.txt 2>&1
+  - curl -s http://localhost:8788/api/health >> /tmp/test-results.txt 2>&1
   - echo "TEST_COMPLETE" >> /tmp/test-results.txt
 CLOUDINIT
 
@@ -39,6 +39,6 @@ echo "1. Boot ISO in QEMU: ./scripts/test-iso.sh"
 echo "2. Select 'Install Agnetic OS'"
 echo "3. After install, reboot and login"
 echo "4. Run: make status"
-echo "5. Check dashboard: curl http://localhost:8899/api/health"
+echo "5. Check dashboard: curl http://localhost:8788/api/health"
 echo "6. Check NATS: agneticctl status"
 echo "7. Check agents: agneticctl ping proxy"

@@ -147,32 +147,40 @@ log "Application code installed"
 # ─── 5. Install YAML configs ───────────────────────────────────────
 log "Installing YAML configs..."
 
-cp "$REPO_DIR/agents/config.yaml" /etc/agnetic/ 2>/dev/null || true
-cp "$REPO_DIR/agents/proxy.yaml" /etc/agnetic/ 2>/dev/null || true
-cp "$REPO_DIR/agents/romi.yaml" /etc/agnetic/ 2>/dev/null || true
-cp "$REPO_DIR/agents/ergo.yaml" /etc/agnetic/ 2>/dev/null || true
-cp "$REPO_DIR/agents/orchestrator.yaml" /etc/agnetic/ 2>/dev/null || true
+cp "$REPO_DIR/agents/config.yaml" /etc/starship/ 2>/dev/null || true
+cp "$REPO_DIR/agents/proxy.yaml" /etc/starship/ 2>/dev/null || true
+cp "$REPO_DIR/agents/romi.yaml" /etc/starship/ 2>/dev/null || true
+cp "$REPO_DIR/agents/ergo.yaml" /etc/starship/ 2>/dev/null || true
+cp "$REPO_DIR/agents/orchestrator.yaml" /etc/starship/ 2>/dev/null || true
 
-log "Configs installed to /etc/agnetic/"
+# OpenCode / oh-my-opencode-slim Starship preset
+mkdir -p /etc/starship/opencode
+if [[ -f "$REPO_DIR/config/opencode/oh-my-opencode-slim.starship.json" ]]; then
+    cp "$REPO_DIR/config/opencode/oh-my-opencode-slim.starship.json" \
+       /etc/starship/opencode/oh-my-opencode-slim.json
+fi
+
+log "Configs installed to /etc/starship/ (legacy: /etc/agnetic)"
 
 # ─── 6. Install NATS config ────────────────────────────────────────
 log "Installing NATS configuration..."
 
-cp "$REPO_DIR/nats/agent-bus.conf" /etc/agnetic/nats/
-cp "$REPO_DIR/nats/server.conf" /etc/agnetic/nats/ 2>/dev/null || true
-cp "$REPO_DIR/nats/subjects.yaml" /etc/agnetic/nats/ 2>/dev/null || true
+cp "$REPO_DIR/nats/agent-bus.conf" /etc/starship/nats/
+cp "$REPO_DIR/nats/server.conf" /etc/starship/nats/ 2>/dev/null || true
+cp "$REPO_DIR/nats/subjects.yaml" /etc/starship/nats/ 2>/dev/null || true
 
 # Update NATS config to use correct paths
-sed -i 's|/home/tech/agnetic-os/nats|/etc/agnetic/nats|g' /etc/agnetic/nats/agent-bus.conf 2>/dev/null || true
+sed -i 's|/home/tech/agnetic-os/nats|/etc/starship/nats|g' /etc/starship/nats/agent-bus.conf 2>/dev/null || true
+sed -i 's|/etc/agnetic/nats|/etc/starship/nats|g' /etc/starship/nats/agent-bus.conf 2>/dev/null || true
 
-log "NATS config installed to /etc/agnetic/nats/"
+log "NATS config installed to /etc/starship/nats/"
 
 # ─── 7. Create Python venv ─────────────────────────────────────────
 log "Creating Python venv..."
 
-python3 -m venv /opt/agnetic/venv
-/opt/agnetic/venv/bin/pip install --upgrade pip -q
-/opt/agnetic/venv/bin/pip install nats-py aiohttp httpx PyYAML -q
+python3 -m venv /opt/starship/venv
+/opt/starship/venv/bin/pip install --upgrade pip -q
+/opt/starship/venv/bin/pip install nats-py aiohttp httpx PyYAML -q
 log "Python venv created with dependencies"
 
 # ─── 8. Install systemd units ──────────────────────────────────────

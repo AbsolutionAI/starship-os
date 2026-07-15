@@ -452,7 +452,7 @@ agneticctl agent status     # Shows running/stopped state of all agents
 
 ### Dashboard Chat
 
-The Agnetic OS dashboard runs on `http://localhost:8899`. Open it in a browser to:
+The Starship OS dashboard runs on `http://localhost:8788`. Open it in a browser to:
 - View agent status (running/stopped)
 - Send one-off commands via the web interface
 - Read event logs and status messages streamed from NATS

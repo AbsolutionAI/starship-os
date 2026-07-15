@@ -123,18 +123,19 @@ done
 sleep 3
 
 # ---- Layer 5: Web Dashboard ----
-echo " [5/6] Starting Web Dashboard (port 8899)..."
+echo " [5/6] Starting Web Dashboard (port 8788)..."
 if [ -f "$PID_DIR/dashboard.pid" ] && kill -0 "$(cat "$PID_DIR/dashboard.pid")" 2>/dev/null; then
     echo "   Dashboard already running"
 else
     OLLAMA_URL="http://127.0.0.1:${OLLAMA_PORT}" \
     NATS_URL="nats://127.0.0.1:${NATS_PORT}" \
     AGNETIC_ROOT="$AGNETIC_ROOT" \
-    DASHBOARD_PORT=8899 \
+    DASHBOARD_PORT=8788 \
+    AGNETIC_DASHBOARD_PORT=8788 \
     nohup "$PYTHON" "$AGNETIC_ROOT/lib/dashboard/server.py" \
         > "$LOG_DIR/dashboard.log" 2>&1 &
     echo $! > "$PID_DIR/dashboard.pid"
-    echo "   Dashboard starting on http://0.0.0.0:8899"
+    echo "   Dashboard starting on http://0.0.0.0:8788"
 fi
 
 # ---- Layer 6: Startup Validation ----
@@ -144,7 +145,7 @@ echo " [6/6] Running Startup Validation..."
 echo ""
 echo "============================================"
 echo " Starship OS Bridge is online."
-echo " Dashboard: http://localhost:8899"
+echo " Dashboard: http://localhost:8788"
 echo " NATS:      nats://127.0.0.1:${NATS_PORT}"
 echo " Ollama:    http://127.0.0.1:${OLLAMA_PORT}"
 echo "============================================"

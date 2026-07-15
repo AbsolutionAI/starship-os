@@ -11,7 +11,11 @@
 | NATS | Apache-2.0 | Message bus |
 | Eve-V2-Unleashed (Ollama model) | Upstream model card | Default reasoning weights |
 
-Pin exact versions in `third_party/pins.json` when packaging.
+Pinned in `third_party/pins.json`:
+- **opencode-ai** `1.18.2` → `third_party/opencode/opencode-ai-1.18.2.tgz`
+- **oh-my-opencode-slim** `2.2.2` → `third_party/oh-my-opencode-slim/oh-my-opencode-slim-2.2.2.tgz`
+
+Vendor: `bash scripts/vendor-opencode.sh` · Install: `bash scripts/install-opencode.sh`
 
 ## Attribution
 

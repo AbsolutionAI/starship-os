@@ -51,10 +51,9 @@ Alpha 2.1 WSL may still use `/opt/agnetic` — compat symlink planned.
 |---------|------|
 | NATS | 4222 |
 | Ollama | 11434 / 11435 (WSL) |
-| Dashboard (2.1 C2) | 8788 |
-| Dashboard (2.0 legacy) | 8899 |
+| Dashboard (C2) | 8788 |
 
-Unify on **8788** in 2.1 final packaging.
+Unified on **8788** (Phase 1).
 
 ## Security boundary
 

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://unpkg.com/oh-my-opencode-slim@latest/oh-my-opencode-slim.schema.json",
+  "preset": "starship-local",
+  "presets": {
+    "starship-local": {
+      "orchestrator": {
+        "model": "ollama/Eve-V2-Unleashed",
+        "skills": ["*"],
+        "mcps": ["*"]
+      },
+      "oracle": {
+        "model": "ollama/Eve-V2-Unleashed",
+        "skills": ["simplify"],
+        "mcps": []
+      },
+      "explorer": {
+        "model": "ollama/qwen2.5:7b",
+        "skills": [],
+        "mcps": []
+      },
+      "librarian": {
+        "model": "ollama/qwen2.5:7b",
+        "skills": [],
+        "mcps": ["websearch"]
+      },
+      "designer": {
+        "model": "ollama/qwen2.5:7b",
+        "skills": [],
+        "mcps": []
+      },
+      "fixer": {
+        "model": "ollama/qwen2.5:7b",
+        "skills": [],
+        "mcps": []
+      }
+    }
+  },
+  "_comment": "Starship OS local Ollama preset. Swap fixer/oracle to qwen35-claude-coder when VRAM >= 8GB."
+}

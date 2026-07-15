@@ -1,0 +1,28 @@
+{
+  "schema": "starship-os/third_party-pins/v1",
+  "updated": "2026-07-15",
+  "components": {
+    "opencode": {
+      "package": "opencode-ai",
+      "version": "1.18.2",
+      "source": "npm",
+      "github": "https://github.com/anomalyco/opencode",
+      "tag": "v1.18.2",
+      "install": "npm install -g opencode-ai@1.18.2",
+      "vendor_dir": "third_party/opencode",
+      "notes": "Coding agent CLI; Starship ships local Ollama preset only"
+    },
+    "oh-my-opencode-slim": {
+      "package": "oh-my-opencode-slim",
+      "version": "2.2.2",
+      "source": "npm",
+      "github": "https://github.com/alvinunreal/oh-my-opencode-slim",
+      "tag": "v2.2.2",
+      "install": "npm install -g oh-my-opencode-slim@2.2.2",
+      "vendor_dir": "third_party/oh-my-opencode-slim",
+      "config": "config/opencode/oh-my-opencode-slim.starship.json",
+      "system_config": "/etc/starship/opencode/oh-my-opencode-slim.json",
+      "notes": "Multi-agent suite; use starship-local preset (Eve-V2 + qwen2.5:7b)"
+    }
+  }
+}

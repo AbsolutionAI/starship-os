@@ -107,7 +107,7 @@ cat /tmp/test-results.txt
 - [ ] System boots after install
 - [ ] Login works
 - [ ] `make status` shows all services
-- [ ] Dashboard accessible at `http://localhost:8899`
+- [ ] Dashboard accessible at `http://localhost:8788`
 - [ ] NATS running (`agneticctl status`)
 - [ ] Agents ping (`agneticctl ping proxy/romi/ergo`)
 - [ ] Ollama models listed (`ollama list`)
@@ -124,7 +124,7 @@ After installation, run these checks:
 make status
 
 # Check dashboard health
-curl -s http://localhost:8899/api/health
+curl -s http://localhost:8788/api/health
 
 # Check NATS
 agneticctl status

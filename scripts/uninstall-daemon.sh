@@ -40,11 +40,11 @@ systemctl daemon-reload
 
 # Remove installed files
 log "Removing files..."
-rm -rf /opt/agnetic
-rm -rf /etc/agnetic
-rm -rf /var/lib/agnetic
-rm -rf /var/log/agnetic
-rm -f /usr/local/bin/agneticctl
+rm -rf /opt/starship /opt/agnetic
+rm -rf /etc/starship /etc/agnetic
+rm -rf /var/lib/starship /var/lib/agnetic
+rm -rf /var/log/starship /var/log/agnetic
+rm -f /usr/local/bin/starshipctl /usr/local/bin/agneticctl
 
 # Remove users (optional, keeps home dirs)
 log "Removing system users..."

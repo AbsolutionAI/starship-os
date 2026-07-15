@@ -10,6 +10,6 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Agnetic OS CLI v0.1.0")
+		fmt.Println("Starship OS CLI v2.1.0-alpha.1")
 	},
 }

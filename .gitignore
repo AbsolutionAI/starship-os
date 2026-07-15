@@ -3,7 +3,8 @@ target/
 *.o
 *.so
 *.dylib
-agneticctl/agneticctl
+starshipctl/starshipctl
+starshipctl/agneticctl
 agent/target/
 debian/installed/
 

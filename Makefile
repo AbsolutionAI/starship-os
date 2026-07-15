@@ -9,13 +9,16 @@ all: build build-agent
 
 # ─── Build ──────────────────────────────────────────────────────────
 build:
-	cd agneticctl && $(GO) build -o agneticctl .
+	cd starshipctl && $(GO) build -o starshipctl .
+	@ln -sf starshipctl starshipctl/agneticctl 2>/dev/null || true
 
 build-agent:
 	cd agent && $(CARGO) build --release
 
 cli: build
-	cp agneticctl/agneticctl ~/.local/bin/agneticctl
+	mkdir -p ~/.local/bin
+	cp starshipctl/starshipctl ~/.local/bin/starshipctl
+	ln -sf starshipctl ~/.local/bin/agneticctl
 
 # ─── Install (requires root) ────────────────────────────────────────
 install:
@@ -69,7 +72,7 @@ status:
 
 # ─── Clean ──────────────────────────────────────────────────────────
 clean:
-	rm -f agneticctl/agneticctl
+	rm -f starshipctl/starshipctl starshipctl/agneticctl
 	rm -rf agent/target
 	rm -rf __pycache__ agents/__pycache__ dashboard/__pycache__
 

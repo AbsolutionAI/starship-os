@@ -51,40 +51,49 @@ fi
 log "Creating directory structure..."
 
 DIRS=(
-    /opt/agnetic/bin
-    /opt/agnetic/lib/agnetic
-    /opt/agnetic/lib/agnetic/agents
-    /opt/agnetic/lib/agnetic/agents/skills
-    /opt/agnetic/lib/agnetic/dashboard
-    /opt/agnetic/lib/agnetic/tray
-    /opt/agnetic/lib/agnetic/scripts
-    /opt/agnetic/lib/agnetic/skills
-    /opt/agnetic/lib/agnetic/souls
-    /opt/agnetic/venv
-    /etc/agnetic
-    /etc/agnetic/nats
-    /var/lib/agnetic
-    /var/lib/agnetic/nats
-    /var/lib/agnetic/message-history
-    /var/log/agnetic
+    /opt/starship/bin
+    /opt/starship/lib/starship/agents
+    /opt/starship/lib/starship/agents/skills
+    /opt/starship/lib/starship/dashboard
+    /opt/starship/lib/starship/tray
+    /opt/starship/lib/starship/scripts
+    /opt/starship/lib/starship/skills
+    /opt/starship/lib/starship/souls
+    /opt/starship/venv
+    /etc/starship
+    /etc/starship/nats
+    /var/lib/starship
+    /var/lib/starship/nats
+    /var/lib/starship/message-history
+    /var/log/starship
 )
 
 for d in "${DIRS[@]}"; do
     mkdir -p "$d"
 done
-log "Directories created"
+# Transitional Alpha 2.1 dual-root (legacy agnetic paths)
+ln -sfn /opt/starship /opt/agnetic
+ln -sfn /opt/starship/lib/starship /opt/starship/lib/agnetic
+ln -sfn /etc/starship /etc/agnetic
+ln -sfn /var/lib/starship /var/lib/agnetic
+ln -sfn /var/log/starship /var/log/agnetic
+log "Directories created (/opt/starship primary, /opt/agnetic symlink)"
 
 # ─── 3. Install binaries ───────────────────────────────────────────
 log "Installing binaries..."
 
-# agneticctl CLI
-if [[ -f "$REPO_DIR/agneticctl/agneticctl" ]]; then
-    cp "$REPO_DIR/agneticctl/agneticctl" /opt/agnetic/bin/
-    chmod 755 /opt/agnetic/bin/agneticctl
-    ln -sf /opt/agnetic/bin/agneticctl /usr/local/bin/agneticctl
-    log "Installed: agneticctl"
+# starshipctl CLI (agneticctl compat symlink)
+if [[ -f "$REPO_DIR/starshipctl/starshipctl" ]]; then
+    cp "$REPO_DIR/starshipctl/starshipctl" /opt/starship/bin/
+    chmod 755 /opt/starship/bin/starshipctl
+    ln -sf /opt/starship/bin/starshipctl /usr/local/bin/starshipctl
+    ln -sf /opt/starship/bin/starshipctl /usr/local/bin/agneticctl
+    ln -sf /opt/starship/bin/starshipctl /opt/starship/bin/agneticctl
+    # transitional dual-root
+    ln -sfn /opt/starship /opt/agnetic 2>/dev/null || true
+    log "Installed: starshipctl (+ agneticctl symlink)"
 else
-    warn "agneticctl binary not found — build it first"
+    warn "starshipctl binary not found — build it first (make build)"
 fi
 
 # StarAgent
@@ -240,9 +249,9 @@ for unit in agnetic-nats agnetic-staragent agnetic-agent@proxy agnetic-agent@rom
 done
 
 echo ""
-echo -e "  Dashboard: http://localhost:8899"
-echo -e "  NATS:      nats://localhost:4222"
-echo -e "  CLI:       agneticctl --help"
+	echo -e "  Dashboard: http://localhost:8788"
+	echo -e "  NATS:      nats://localhost:4222"
+	echo -e "  CLI:       starshipctl --help"
 echo ""
 echo -e "  Logs:      journalctl -u agnetic-* -f"
 echo -e "  Status:    systemctl status agnetic-mesh.target"

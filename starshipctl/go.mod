@@ -1,4 +1,4 @@
-module github.com/andromi-hash/agnetic-os/agneticctl
+module github.com/andromi-hash/starship-os/starshipctl
 
 go 1.22
 

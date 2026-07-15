@@ -8,11 +8,11 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "agneticctl",
-	Short: "Agnetic OS CLI",
-	Long:  "Agnetic OS - a native AI operating system for complex system control",
+	Use:   "starshipctl",
+	Short: "Starship OS CLI",
+	Long:  "Starship OS - a native AI operating system for complex system control",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Agnetic OS CLI")
+		fmt.Println("Starship OS CLI")
 	},
 }
 

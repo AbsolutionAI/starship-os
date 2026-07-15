@@ -1,6 +1,6 @@
 # Starship OS — Streamline, Standardize, Bare-Metal Plan (Alpha 2.1)
 
-**Status:** Phase 0 in progress  
+**Status:** Phase 0 complete · Phase 1 in progress  
 **Canonical repo:** https://github.com/andromi-hash/starship-os  
 **Legacy Alpha 2.0:** https://github.com/andromi-hash/agnetic-os (archived source)
 
@@ -23,21 +23,25 @@
 - ISO profiles: `starship-server` / `starship-ops` / `starship-edge`
 - UI: headless server + web C2 + TUI primary; optional GNOME Ops Console
 
-## Phase 0 goals (current)
+## Phase 0 goals (done)
 
-1. Reconcile agnetic-os packaging + WSL 2.1 services into starship-os
-2. Docs: plans, architecture, module catalog stubs
-3. models.yaml + Eve-V2-Unleashed Modelfile
-4. Secret scrub + .gitignore
-5. Tag 2.1.0-alpha.1 and push
+1. ~~Reconcile agnetic-os packaging + WSL 2.1 services into starship-os~~
+2. ~~Docs: plans, architecture, module catalog stubs~~
+3. ~~models.yaml + Eve-V2-Unleashed Modelfile~~
+4. ~~Secret scrub + .gitignore~~
+5. ~~Tag 2.1.0-alpha.1~~ (push pending `gh auth login`)
 
-## Phase 1+ (next)
+## Phase 1 (in progress)
 
-- Streamline multi-hw install, systemd, `/etc/starship`, `starshipctl`
-- C11 feasibility ADR + sandbox spike
-- ISO autoinstall
-- Fleet / ops manager / plant / red-blue
-- OpenCode + oh-my-opencode-slim local preset
+- [x] `starshipctl` rename (Go CLI, Makefile, packaging scripts)
+- [x] `/opt/starship` + `/etc/starship` install roots (legacy `/opt/agnetic` symlinks)
+- [x] CI workflow paths for monorepo layout
+- [ ] Streamline multi-hw install + systemd unit path updates
+- [ ] Dashboard unify on :8788
+- [ ] C11 feasibility ADR + sandbox spike
+- [ ] ISO autoinstall
+- [ ] OpenCode + oh-my-opencode-slim local preset
+- [ ] Fleet / ops manager / plant / red-blue
 
 ## Language map
 

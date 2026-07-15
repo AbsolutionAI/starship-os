@@ -75,26 +75,30 @@ chmod +x "$LB_DIR/config/hooks/live/0100-agnetic-install.chroot"
 log "Copying Agnetic OS files into ISO..."
 
 # Create the installation directory in chroot
-mkdir -p "$LB_DIR/config/includes.chroot/opt/agnetic"
-mkdir -p "$LB_DIR/config/includes.chroot/etc/agnetic"
+mkdir -p "$LB_DIR/config/includes.chroot/opt/starship/bin"
+mkdir -p "$LB_DIR/config/includes.chroot/opt/starship/lib"
+mkdir -p "$LB_DIR/config/includes.chroot/etc/starship/nats"
+mkdir -p "$LB_DIR/config/includes.chroot/usr/local/bin"
 mkdir -p "$LB_DIR/config/includes.chroot/root"
 
 # Copy binaries
-cp "$REPO_DIR/agneticctl/agneticctl" "$LB_DIR/config/includes.chroot/opt/agnetic/bin/" 2>/dev/null || true
-cp "$REPO_DIR/agent/target/release/staragent" "$LB_DIR/config/includes.chroot/opt/agnetic/bin/" 2>/dev/null || true
-cp "$REPO_DIR/scripts/detect-gpu.sh" "$LB_DIR/config/includes.chroot/opt/agnetic/bin/" 2>/dev/null || true
+cp "$REPO_DIR/starshipctl/starshipctl" "$LB_DIR/config/includes.chroot/opt/starship/bin/" 2>/dev/null || true
+ln -sf /opt/starship/bin/starshipctl "$LB_DIR/config/includes.chroot/usr/local/bin/starshipctl" 2>/dev/null || true
+ln -sf /opt/starship/bin/starshipctl "$LB_DIR/config/includes.chroot/usr/local/bin/agneticctl" 2>/dev/null || true
+cp "$REPO_DIR/agent/target/release/staragent" "$LB_DIR/config/includes.chroot/opt/starship/bin/" 2>/dev/null || true
+cp "$REPO_DIR/scripts/detect-gpu.sh" "$LB_DIR/config/includes.chroot/opt/starship/bin/" 2>/dev/null || true
 
 # Copy Python code
-cp -r "$REPO_DIR/agents" "$LB_DIR/config/includes.chroot/opt/agnetic/lib/" 2>/dev/null || true
-cp -r "$REPO_DIR/dashboard" "$LB_DIR/config/includes.chroot/opt/agnetic/lib/" 2>/dev/null || true
-cp -r "$REPO_DIR/tray" "$LB_DIR/config/includes.chroot/opt/agnetic/lib/" 2>/dev/null || true
-cp -r "$REPO_DIR/scripts" "$LB_DIR/config/includes.chroot/opt/agnetic/lib/" 2>/dev/null || true
-cp -r "$REPO_DIR/skills" "$LB_DIR/config/includes.chroot/opt/agnetic/lib/" 2>/dev/null || true
-cp -r "$REPO_DIR/souls" "$LB_DIR/config/includes.chroot/opt/agnetic/lib/" 2>/dev/null || true
+cp -r "$REPO_DIR/agents" "$LB_DIR/config/includes.chroot/opt/starship/lib/" 2>/dev/null || true
+cp -r "$REPO_DIR/dashboard" "$LB_DIR/config/includes.chroot/opt/starship/lib/" 2>/dev/null || true
+cp -r "$REPO_DIR/tray" "$LB_DIR/config/includes.chroot/opt/starship/lib/" 2>/dev/null || true
+cp -r "$REPO_DIR/scripts" "$LB_DIR/config/includes.chroot/opt/starship/lib/" 2>/dev/null || true
+cp -r "$REPO_DIR/skills" "$LB_DIR/config/includes.chroot/opt/starship/lib/" 2>/dev/null || true
+cp -r "$REPO_DIR/souls" "$LB_DIR/config/includes.chroot/opt/starship/lib/" 2>/dev/null || true
 
 # Copy configs
-cp "$REPO_DIR/nats/"* "$LB_DIR/config/includes.chroot/etc/agnetic/nats/" 2>/dev/null || true
-cp "$REPO_DIR/agents/"*.yaml "$LB_DIR/config/includes.chroot/etc/agnetic/" 2>/dev/null || true
+cp "$REPO_DIR/nats/"* "$LB_DIR/config/includes.chroot/etc/starship/nats/" 2>/dev/null || true
+cp "$REPO_DIR/agents/"*.yaml "$LB_DIR/config/includes.chroot/etc/starship/" 2>/dev/null || true
 
 # Copy systemd units
 mkdir -p "$LB_DIR/config/includes.chroot/lib/systemd/system"

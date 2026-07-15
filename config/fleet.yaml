@@ -63,10 +63,10 @@ red_blue:
   enabled: true
   default_plant: plant-range
   rules:
-    - red-team never unrestricted OpenCode
-    - red-team tools limited to toolset: security_audit
-    - blue-team may use full diagnostics
-    - cross-plant red traffic denied by default
+    - "red-team never unrestricted OpenCode"
+    - "red-team tools limited to toolset security_audit"
+    - "blue-team may use full diagnostics"
+    - "cross-plant red traffic denied by default"
 
 # This node (override via /etc/starship/fleet-node.yaml)
 node:

@@ -2,6 +2,21 @@
 
 All notable changes to **Starship OS**.
 
+## [2.1.0-alpha.3] — 2026-07-15
+
+### Added
+- **Cross-plant ACL** — `acl` in `fleet.yaml`; `check_cross_plant` policy engine
+- **NATS fleet-bus** + **multi-tenant accounts/nkeys** — ops firstboot default accounts mode
+- **C11 sandbox bench** (`make bench`, p50 ~0.5ms) + optional `STARSHIP_SANDBOX_NATIVE=1` bridge
+- **nats_connect** helper — user/pass / token / nkey for fleet clients
+- **sandbox_run** installed to `/opt/starship/bin` via install-daemon
+- Smoke suite expanded (33 checks)
+
+### Changed
+- Ops profile firstboot: agent-bus → multi-tenant NATS accounts
+- Agent/dashboard/fleet systemd units load `/etc/starship/nats.env`
+- Phase 2 streamline plan complete; Phase 3 packaging started
+
 ## [2.1.0-alpha.2] — 2026-07-15
 
 ### Added
@@ -15,17 +30,9 @@ All notable changes to **Starship OS**.
 - **Fleet manager** — plants, ops manager, red/blue (`config/fleet.yaml`, `services/fleet.py`, `starshipctl fleet`)
 - **Dashboard fleet map** — `/api/fleet` + plant map panel
 - **Red-team policy** — `fleet_policy.py` denies OpenCode/shell/write for red-team
-- **Cross-plant ACL** — `acl` block in `fleet.yaml`; `check_cross_plant` in policy engine
-- **Multi-node NATS fleet auth** — `nats/fleet-bus.conf` + `fleet-auth.yaml`; `STARSHIP_NATS_TOKEN`
-- **Ops firstboot fleet-bus** — token materialization, `active.conf`, `nats.env` / `fleet.env`
-- **C11 sandbox bench** — `make bench` / `scripts/bench-sandbox.sh` (p50 ≪ 2ms, ADR 0001)
-- **Native sandbox bridge** — `agents/sandbox_native.py` via `STARSHIP_SANDBOX_NATIVE=1`
-- **NATS multi-tenant accounts** — `fleet-accounts.conf.tmpl`, `gen-nats-accounts.sh`, optional nkeys
-- **nats_connect helper** — user/pass / token / nkey env for fleet clients
 
 ### Changed
 - Product branding strings → Starship OS; debian package `starship-os`
-- `delegate_to_agent` dual-publishes `starship.*` / `agnetic.*` and accepts `plant`
 
 ## [2.1.0-alpha.1] — 2026-07-15
 

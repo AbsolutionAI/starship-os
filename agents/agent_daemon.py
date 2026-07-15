@@ -27,10 +27,27 @@ logging.basicConfig(
 )
 log = logging.getLogger("agent-daemon")
 
-NATS_URL = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
+def _resolve_nats_url() -> str:
+    try:
+        from nats_connect import build_nats_url, safe_url
+        return build_nats_url()
+    except ImportError:
+        return os.getenv("NATS_URL", "nats://127.0.0.1:4222")
+
+
+def _nats_log_url() -> str:
+    try:
+        from nats_connect import safe_url
+        return safe_url()
+    except ImportError:
+        u = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
+        return u.split("@")[-1] if "@" in u else u
+
+
+NATS_URL = _resolve_nats_url()
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
 _SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
-_PROJECT_ROOT = Path(os.getenv("AGNETIC_ROOT", str(_SCRIPT_DIR.parent)))
+_PROJECT_ROOT = Path(os.getenv("STARSHIP_ROOT", os.getenv("AGNETIC_ROOT", str(_SCRIPT_DIR.parent))))
 AGENTS_DIR = _PROJECT_ROOT / "agents"
 
 
@@ -318,18 +335,22 @@ async def run_agent(agent_name, model_override=None):
     status_subject = nats_config.get("subjects", {}).get("status", agent_status(agent_name))
     event_subject = nats_config.get("subjects", {}).get("event", agent_event(agent_name))
     
-    log.info("Starting agent '%s' (model=%s, nats=%s)", agent_name, model, NATS_URL)
+    nats_url = _resolve_nats_url()
+    log.info("Starting agent '%s' (model=%s, nats=%s)", agent_name, model, _nats_log_url())
     log.info("  Command subjects: %s", dual(cmd_subject))
     
     # Ensure model is available before connecting to NATS
     await ensure_model(model)
     
     try:
-        from nats import connect as nats_connect
+        try:
+            from nats_connect import connect as nats_connect
+        except ImportError:
+            from nats import connect as nats_connect
         from nats.errors import TimeoutError
         
-        nc = await nats_connect(NATS_URL)
-        log.info("Connected to NATS: %s", NATS_URL)
+        nc = await nats_connect(nats_url)
+        log.info("Connected to NATS: %s", _nats_log_url())
         
         await dual_publish(nc, status_subject, json.dumps({
             "agent": agent_name,

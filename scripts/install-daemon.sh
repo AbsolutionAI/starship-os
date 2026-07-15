@@ -98,11 +98,24 @@ fi
 
 # StarAgent
 if [[ -f "$REPO_DIR/agent/target/release/staragent" ]]; then
-    cp "$REPO_DIR/agent/target/release/staragent" /opt/agnetic/bin/
-    chmod 755 /opt/agnetic/bin/staragent
+    cp "$REPO_DIR/agent/target/release/staragent" /opt/starship/bin/
+    chmod 755 /opt/starship/bin/staragent
     log "Installed: staragent"
 else
     warn "staragent binary not found — build it first"
+fi
+
+# C11 sandbox_run (ADR 0001)
+if [[ ! -x "$REPO_DIR/src/c/sandbox_spike/sandbox_run" ]]; then
+    make -C "$REPO_DIR/src/c/sandbox_spike" all 2>/dev/null || true
+fi
+if [[ -x "$REPO_DIR/src/c/sandbox_spike/sandbox_run" ]]; then
+    cp "$REPO_DIR/src/c/sandbox_spike/sandbox_run" /opt/starship/bin/sandbox_run
+    chmod 755 /opt/starship/bin/sandbox_run
+    ln -sf /opt/starship/bin/sandbox_run /usr/local/bin/sandbox_run 2>/dev/null || true
+    log "Installed: sandbox_run"
+else
+    warn "sandbox_run not built — optional (make -C src/c/sandbox_spike)"
 fi
 
 # ─── 4. Install Python application code ─────────────────────────────
@@ -111,6 +124,9 @@ log "Installing Python application code..."
 # Agent daemon
 cp "$REPO_DIR/agents/agent_daemon.py" /opt/starship/lib/starship/agents/
 cp "$REPO_DIR/agents/nats_subjects.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+cp "$REPO_DIR/agents/nats_connect.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+cp "$REPO_DIR/agents/sandbox_native.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
+cp "$REPO_DIR/agents/fleet_policy.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
 cp "$REPO_DIR/agents/run_agent.sh" /opt/starship/lib/starship/agents/ 2>/dev/null || true
 cp "$REPO_DIR/agents/scheduler.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true
 cp "$REPO_DIR/agents/workflows.py" /opt/starship/lib/starship/agents/ 2>/dev/null || true

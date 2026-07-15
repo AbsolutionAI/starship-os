@@ -1,6 +1,6 @@
 # Starship OS — Streamline, Standardize, Bare-Metal Plan (Alpha 2.1)
 
-**Status:** Phase 0–1 complete · Phase 2 in progress  
+**Status:** Phase 0–2 complete · Phase 3 in progress  
 **Canonical repo:** https://github.com/andromi-hash/starship-os  
 **Legacy Alpha 2.0:** https://github.com/andromi-hash/agnetic-os (archived source)
 
@@ -10,7 +10,7 @@
 |-------|-------------|---------|
 | Alpha | starship-os (scaffold) | 0.x |
 | Alpha 2.0 | agnetic-os | 0.2.0 packaging mesh |
-| Alpha 2.1 | starship-os (this tree) | **2.1.0-alpha.2** |
+| Alpha 2.1 | starship-os (this tree) | **2.1.0-alpha.3** |
 
 ## Product decisions (locked)
 
@@ -45,7 +45,7 @@
 - [x] Fleet / ops manager / plant / red-blue scaffold (`config/fleet.yaml`, `services/fleet.py`, `starshipctl fleet`)
 - [x] Fleet map UI + exercise controls + firstboot register + smoke tests
 
-## Phase 2 (in progress) — fleet hardening + native path
+## Phase 2 (done) — fleet hardening + native path — 2.1.0-alpha.3
 
 - [x] Cross-plant ACL in policy engine (`agents/fleet_policy.py` + `config/fleet.yaml` acl)
 - [x] Multi-node NATS fleet auth map (`nats/fleet-bus.conf`, `nats/fleet-auth.yaml`, token via `STARSHIP_NATS_TOKEN`)
@@ -53,8 +53,16 @@
 - [x] NATS accounts/nkeys for untrusted multi-tenant (`gen-nats-accounts.sh`, ops firstboot)
 - [x] C11 sandbox: measure p50 overhead vs Python; document in ADR (`make bench`)
 - [x] Optional native bridge: Python tools → `sandbox_run` (`STARSHIP_SANDBOX_NATIVE=1`)
-- [x] README / badge version sync to 2.1.0-alpha.2
-- [ ] Tag `v2.1.0-alpha.3` when Phase 2 scaffold green
+- [x] README / badge version sync
+- [x] Tag `v2.1.0-alpha.3`
+
+## Phase 3 (in progress) — package & harden for bare-metal
+
+- [x] Install `sandbox_run` to `/opt/starship/bin` (install-daemon)
+- [ ] NATS TLS optional (fleet accounts over TLS)
+- [x] Wire agents/dashboard units to `nats_connect` + `/etc/starship/nats.env`
+- [ ] ISO firstboot smoke (edge/server/ops autoinstall paths)
+- [ ] Seccomp allowlist in C11 sandbox (post-timing)
 
 ## Language map
 

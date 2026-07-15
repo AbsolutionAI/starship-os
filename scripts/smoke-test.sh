@@ -39,6 +39,8 @@ check "firstboot wires fleet-bus for ops" grep -q '_enable_fleet_bus' scripts/st
 check "firstboot wires accounts" grep -q '_enable_accounts_bus' scripts/starship-firstboot.sh
 check "nats unit uses active.conf" grep -q 'active.conf' systemd/agnetic-nats.service
 check "fleet unit loads nats.env" grep -q 'nats.env' systemd/starship-fleet.service
+check "agent unit loads nats.env" grep -q 'nats.env' systemd/agnetic-agent@.service
+check "install-daemon ships sandbox_run" grep -q 'sandbox_run' scripts/install-daemon.sh
 check "ops profile nats_mode fleet" bash -c 'awk "/^  ops:/{p=1} p&&/nats_mode:/{print; exit}" config/profiles.yaml | grep -q fleet'
 check "fleet-bus token placeholder" grep -q '__STARSHIP_NATS_TOKEN__' nats/fleet-bus.conf
 check "C11 sandbox builds" bash -c 'make -C src/c/sandbox_spike all >/dev/null 2>&1'

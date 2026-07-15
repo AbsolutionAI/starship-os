@@ -1,0 +1,74 @@
+# Starship OS — model registry (Alpha 2.1)
+# Default reasoning model: Eve-V2-Unleashed (infrastructure-tuned context)
+
+version: "2.1"
+default_reasoning: Eve-V2-Unleashed
+default_num_ctx: 16384
+default_temperature: 0.63
+max_output: 8192
+
+models:
+  Eve-V2-Unleashed:
+    role: default_reasoning
+    upstream: jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
+    alias: Eve-V2-Unleashed
+    size_mb: 3400
+    install: required
+    num_ctx:
+      edge: 8192
+      server: 16384
+      ops: 32768
+    notes: "Default initial reasoning. Tool-calling hybrid. Abliterated — always pair with policy/sandbox."
+
+  nomic-embed-text:
+    role: embeddings
+    upstream: nomic-embed-text:latest
+    size_mb: 274
+    install: required
+    notes: "Vector memory / LanceDB embeddings. Always installed."
+
+  qwen2.5:7b:
+    role: general
+    upstream: qwen2.5:7b
+    size_mb: 4700
+    install: if_vram_ge_6gb
+    num_ctx: 16384
+
+  granite4.1-3b:
+    role: fast
+    upstream: huihui_ai/granite4.1-abliterated:3b
+    size_mb: 2100
+    install: edge_preferred
+    num_ctx: 8192
+
+  granite4.1-8b:
+    role: general
+    upstream: huihui_ai/granite4.1-abliterated:8b
+    size_mb: 5300
+    install: if_vram_ge_8gb
+    num_ctx: 16384
+
+  qwen35-claude-coder:
+    role: coding
+    upstream: rafw007/qwen35-claude-coder:9b
+    size_mb: 6600
+    install: if_vram_ge_8gb
+    num_ctx: 16384
+
+  qwen2-math:7b:
+    role: math
+    upstream: qwen2-math:7b
+    size_mb: 4400
+    install: optional
+    num_ctx: 16384
+
+profiles:
+  edge:
+    required: [nomic-embed-text, granite4.1-3b]
+    optional: [Eve-V2-Unleashed]
+  server:
+    required: [nomic-embed-text, Eve-V2-Unleashed]
+    optional: [qwen2.5:7b, qwen2-math:7b]
+  ops:
+    required: [nomic-embed-text, Eve-V2-Unleashed, qwen2.5:7b]
+    optional: [qwen35-claude-coder, granite4.1-8b, qwen2-math:7b]

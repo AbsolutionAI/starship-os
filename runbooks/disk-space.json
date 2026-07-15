@@ -1,0 +1,50 @@
+{
+  "id": "disk-space",
+  "name": "disk-space",
+  "alert_pattern": "disk.*(full|space|usage|%)",
+  "description": "Respond to disk space alerts by checking usage, cleaning temp files, and escalating if critical.",
+  "steps": [
+    {
+      "order": 1,
+      "action": "Check disk usage",
+      "command": "df -h",
+      "expected_outcome": "Disk usage percentages displayed",
+      "timeout_seconds": 30,
+      "critical": false
+    },
+    {
+      "order": 2,
+      "action": "Find large files",
+      "command": "du -sh /* 2>/dev/null | sort -rh | head -20",
+      "expected_outcome": "Top 20 largest directories identified",
+      "timeout_seconds": 60,
+      "critical": false
+    },
+    {
+      "order": 3,
+      "action": "Clean temporary files",
+      "command": "rm -rf /tmp/* /var/tmp/* 2>/dev/null; echo done",
+      "expected_outcome": "Temporary files cleaned",
+      "timeout_seconds": 120,
+      "critical": false
+    },
+    {
+      "order": 4,
+      "action": "Check log sizes",
+      "command": "du -sh /var/log/* 2>/dev/null | sort -rh | head -10",
+      "expected_outcome": "Large log files identified",
+      "timeout_seconds": 30,
+      "critical": false
+    },
+    {
+      "order": 5,
+      "action": "Escalate if critical",
+      "command": "df -h | awk 'NR>1 {print $5}' | sed 's/%//' | while read p; do [ \"$p\" -gt 90 ] && echo \"CRITICAL: disk >90% used\"; done",
+      "expected_outcome": "Escalation check complete",
+      "timeout_seconds": 30,
+      "critical": true
+    }
+  ],
+  "escalation_message": "Disk usage critical \u2014 manual intervention required",
+  "created_at": "2026-07-15T05:47:00.439648+00:00"
+}

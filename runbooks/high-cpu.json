@@ -1,0 +1,42 @@
+{
+  "id": "high-cpu",
+  "name": "high-cpu",
+  "alert_pattern": "cpu.*(high|load|usage|%)",
+  "description": "Investigate and remediate high CPU usage.",
+  "steps": [
+    {
+      "order": 1,
+      "action": "Check system load",
+      "command": "top -bn1 | head -5",
+      "expected_outcome": "System load averages displayed",
+      "timeout_seconds": 30,
+      "critical": false
+    },
+    {
+      "order": 2,
+      "action": "Identify top processes",
+      "command": "ps aux --sort=-%cpu | head -20",
+      "expected_outcome": "Top CPU-consuming processes listed",
+      "timeout_seconds": 30,
+      "critical": false
+    },
+    {
+      "order": 3,
+      "action": "Check for runaway processes",
+      "command": "ps aux --sort=-%cpu | awk '$3>90 {print $2}'",
+      "expected_outcome": "Runaway processes identified",
+      "timeout_seconds": 30,
+      "critical": false
+    },
+    {
+      "order": 4,
+      "action": "Kill or escalate",
+      "command": "ps aux --sort=-%cpu | awk 'NR>1 && $3>95 {print $2}' | head -3 | while read pid; do kill -15 \"$pid\" 2>/dev/null; done",
+      "expected_outcome": "High-CPU processes terminated or escalated",
+      "timeout_seconds": 60,
+      "critical": true
+    }
+  ],
+  "escalation_message": "CPU load critical \u2014 unable to automatically remediate",
+  "created_at": "2026-07-15T05:47:00.439823+00:00"
+}

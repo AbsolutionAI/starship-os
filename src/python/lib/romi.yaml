@@ -1,0 +1,40 @@
+# Romi Agent (Client)
+# User-facing interface, natural language interaction
+# Maps to OpenFrame's Fae (client AI)
+
+name: romi
+role: client_agent
+model: qwen2.5:3b
+provider: ollama
+models:
+  default: qwen2.5:7b
+  available:
+    - qwen2.5:7b
+    - qwen2.5:3b
+    - llama3.2:3b
+    - gemma2:2b
+  switch_logic: "user chat, preference, NL -> qwen2.5:7b; quick reply -> qwen2.5:3b or gemma2:2b"
+
+capabilities:
+  - natural_language_interface
+  - task_explanation
+  - status_reporting
+  - preference_management
+  - user_modeling
+
+skills:
+  - knowledge-store
+  - romi-interface
+
+toolsets:
+  - file_operations
+  - web_search
+  - memory
+  - skills
+  - nats
+
+nats:
+  subjects:
+    command: "agnetic.agent.romi.command.>"
+    event: "agnetic.agent.romi.event.>"
+    status: "agnetic.agent.romi.status"

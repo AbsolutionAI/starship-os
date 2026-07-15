@@ -1,0 +1,36 @@
+name: knowledge_store
+role: knowledge_manager
+model: qwen2.5:3b
+provider: ollama
+models:
+  default: qwen2.5:3b
+  available:
+    - qwen2.5:3b
+    - qwen2.5:7b
+  providers:
+    openrouter:
+      - openai/gpt-4o-mini
+      - google/gemini-2.0-flash-001
+  switch_logic: "research|summarization -> cloud or qwen2.5:7b; quick lookup -> qwen2.5:3b"
+
+capabilities:
+  - document_indexing
+  - log_archival
+  - solution_recording
+  - cross_referencing
+
+skills:
+  - knowledge-store
+
+nats:
+  subjects:
+    command: "agnetic.agent.knowledge_store.command.>"
+    event: "agnetic.agent.knowledge_store.event.>"
+    status: "agnetic.agent.knowledge_store.status"
+
+toolsets:
+  - file_operations
+  - web_search
+  - memory
+  - coding
+  - design

@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agnetic Starship OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070B14;
+  --surface:rgba(14,22,40,0.72);
+  --glass:rgba(14,22,40,0.55);
+  --edge:rgba(60,80,120,0.15);
+  --primary:#7BC8E4;
+  --accent:#C4A97D;
+  --text:#E4DDD0;
+  --dim:#8A9BB0;
+  --muted:#5A6A80;
+  --success:#7BC8A4;
+  --warning:#D4A060;
+  --alert:#D46060;
+  --radius:12px;
+  --sm:8px;
+}
+html{font-size:14px}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;overflow-x:hidden;
+}
+code,.mono{font-family:'JetBrains Mono',monospace}
+
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;
+  background:radial-gradient(ellipse at 20% 50%,rgba(30,60,114,0.15),transparent 60%),
+    radial-gradient(ellipse at 80% 20%,rgba(100,60,30,0.08),transparent 50%),
+    radial-gradient(ellipse at 50% 80%,rgba(20,80,60,0.06),transparent 50%);
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--edge);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+/* Status bar */
+#status-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 16px;
+  background:var(--surface);
+  border-bottom:1px solid var(--edge);
+  backdrop-filter:blur(20px);
+  position:sticky;top:0;z-index:100;
+  gap:10px;
+}
+.ship-name{font-weight:600;font-size:1rem;color:var(--primary);letter-spacing:0.5px;white-space:nowrap}
+.health-dot{width:9px;height:9px;border-radius:50%;background:var(--success);display:inline-block;box-shadow:0 0 8px var(--success);flex-shrink:0}
+.health-dot.alert{background:var(--alert);box-shadow:0 0 8px var(--alert)}
+.clock{font-family:'JetBrains Mono',monospace;color:var(--dim);font-size:0.85rem;white-space:nowrap}
+.status-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+
+/* Universal search */
+#search-wrap{position:relative;flex:1;max-width:420px;min-width:140px}
+#search-input{
+  width:100%;background:var(--glass);border:1px solid var(--edge);
+  color:var(--text);padding:5px 10px 5px 28px;border-radius:20px;
+  font-size:0.75rem;font-family:inherit;outline:none;transition:border 0.2s;
+}
+#search-input:focus{border-color:var(--primary)}
+#search-input::placeholder{color:var(--muted);font-size:0.65rem}
+#search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:0.75rem;pointer-events:none}
+#search-shortcut{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  font-size:0.55rem;color:var(--muted);background:var(--edge);padding:1px 5px;border-radius:4px;pointer-events:none;line-height:1.4}
+#search-dropdown{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;
+  background:var(--surface);border:1px solid var(--edge);border-radius:var(--radius);
+  backdrop-filter:blur(24px);max-height:360px;overflow-y:auto;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:200;display:none;
+}
+#search-dropdown.open{display:block}
+.search-group{padding:4px 0}
+.search-group-title{padding:4px 10px;font-size:0.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.search-item{
+  display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;
+  transition:background 0.15s;border-left:2px solid transparent;
+}
+.search-item:hover,.search-item.highlighted{background:rgba(123,200,228,0.08);border-left-color:var(--primary)}
+.search-item-icon{font-size:0.85rem;width:18px;text-align:center;flex-shrink:0}
+.search-item-info{flex:1;min-width:0}
+.search-item-name{font-size:0.75rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-item-name .match{color:var(--primary)}
+.search-item-desc{font-size:0.6rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-item-action{font-size:0.55rem;color:var(--accent);flex-shrink:0}
+
+/* Widget grid */
+#widget-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:10px;
+  padding:10px;
+  flex:1;
+}
+#widget-grid.columns-1{grid-template-columns:1fr}
+#widget-grid.columns-2{grid-template-columns:1fr 1fr}
+#widget-grid.columns-3{grid-template-columns:repeat(3,1fr)}
+
+/* Widget */
+.widget{
+  background:var(--surface);
+  border:1px solid var(--edge);
+  border-radius:var(--radius);
+  backdrop-filter:blur(24px);
+  display:flex;flex-direction:column;
+  min-height:0;
+  transition:opacity 0.2s,transform 0.2s;
+  position:relative;
+}
+.widget.dragging{opacity:0.4}
+.widget.drag-over{border-color:var(--primary);box-shadow:0 0 12px rgba(123,200,228,0.2)}
+.widget.drag-over-top::before{content:'';position:absolute;top:-1px;left:12px;right:12px;height:2px;background:var(--primary);border-radius:1px}
+.widget.drag-over-bot::after{content:'';position:absolute;bottom:-1px;left:12px;right:12px;height:2px;background:var(--primary);border-radius:1px}
+
+.widget-header{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 10px;
+  border-bottom:1px solid var(--edge);
+  cursor:grab;
+  user-select:none;
+  flex-shrink:0;
+}
+.widget-header:active{cursor:grabbing}
+.widget-handle{color:var(--muted);font-size:0.8rem;cursor:grab;flex-shrink:0;width:16px;text-align:center}
+.widget-title{font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.widget-toggle{
+  background:none;border:none;color:var(--muted);
+  font-size:0.8rem;cursor:pointer;padding:2px 4px;
+  flex-shrink:0;transition:transform 0.2s;
+}
+.widget-toggle.collapsed{transform:rotate(-90deg)}
+.widget-resize{
+  background:none;border:none;color:var(--muted);
+  font-size:0.7rem;cursor:pointer;padding:2px 4px;
+  flex-shrink:0;transition:color 0.2s;border-radius:4px;
+}
+.widget-resize:hover{color:var(--primary);background:rgba(123,200,228,0.1)}
+.widget-resize.full{color:var(--accent)}
+.widget-body{padding:6px 8px 8px;flex:1;min-height:0;overflow-y:auto}
+.widget-body.collapsed{display:none}
+.widget.wide{grid-column:span 2}
+.widget.tall{grid-row:span 2}
+.widget.full{grid-column:1/-1}
+
+/* Layout controls */
+#layout-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 12px;
+  background:var(--surface);
+  border-bottom:1px solid var(--edge);
+  flex-wrap:wrap;
+  flex-shrink:0;
+}
+#layout-bar label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+#layout-bar select{
+  background:var(--glass);border:1px solid var(--edge);
+  color:var(--text);padding:3px 8px;border-radius:var(--sm);
+  font-size:0.75rem;font-family:inherit;
+}
+#layout-bar select option{background:#0E1628}
+.layout-btn{
+  padding:3px 10px;border-radius:12px;
+  border:1px solid var(--edge);background:var(--glass);
+  color:var(--dim);font-size:0.7rem;font-family:inherit;
+  cursor:pointer;transition:all 0.2s;
+}
+.layout-btn:hover{background:rgba(123,200,228,0.1);color:var(--primary)}
+.layout-btn.active{border-color:var(--primary);color:var(--primary)}
+
+/* Agent list */
+.agent-list{display:flex;flex-direction:column;gap:3px}
+.agent-item{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;border-radius:var(--sm);
+  cursor:pointer;transition:background 0.2s;
+  border:1px solid transparent;
+}
+.agent-item:hover{background:rgba(123,200,228,0.06)}
+.agent-item.selected{background:rgba(123,200,228,0.1);border-color:rgba(123,200,228,0.2)}
+.agent-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.agent-dot.online{background:var(--success);box-shadow:0 0 5px var(--success)}
+.agent-dot.offline{background:var(--alert);box-shadow:0 0 5px var(--alert)}
+.agent-info{flex:1;min-width:0}
+.agent-name{font-size:0.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent-meta{font-size:0.65rem;color:var(--muted);display:flex;gap:6px;margin-top:1px}
+.agent-model{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:0.6rem}
+.agent-status{font-size:0.6rem;color:var(--success)}
+.agent-status.idle{color:var(--muted)}
+
+/* Terminal widget */
+.widget.terminal-widget .widget-body{padding:0;overflow:hidden}
+.widget.terminal-widget .xterm{height:100%;padding:4px}
+.widget.terminal-widget .xterm-viewport{scrollbar-width:thin}
+#terminal-container{height:300px;width:100%}
+.widget.tall #terminal-container{height:480px}
+.widget.full #terminal-container{height:400px}
+.terminal-reconnect{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;height:100%;min-height:120px;
+  color:var(--muted);font-size:0.75rem;
+}
+
+/* Chat widget */
+.chat-messages{
+  flex:1;overflow-y:auto;padding:8px;
+  display:flex;flex-direction:column;gap:6px;min-height:120px;
+}
+.msg{
+  padding:7px 10px;border-radius:var(--sm);
+  background:var(--glass);border:1px solid var(--edge);
+  border-left:3px solid var(--muted);
+  max-width:92%;font-size:0.8rem;
+  animation:msgIn 0.25s ease;
+}
+.msg.user{border-left-color:var(--primary);align-self:flex-end;background:rgba(123,200,228,0.08)}
+.msg.agent-msg{align-self:flex-start}
+.msg-sender{font-size:0.65rem;color:var(--muted);margin-bottom:2px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.msg-text{line-height:1.4;white-space:pre-wrap;word-break:break-word}
+.msg-time{font-size:0.6rem;color:var(--muted);margin-top:2px;text-align:right}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.chat-input-row{display:flex;gap:6px;padding:6px 8px;border-top:1px solid var(--edge);flex-shrink:0}
+.chat-input{
+  flex:1;background:var(--glass);border:1px solid var(--edge);
+  color:var(--text);padding:6px 10px;border-radius:var(--sm);
+  font-size:0.8rem;font-family:inherit;outline:none;
+}
+.chat-input:focus{border-color:var(--primary)}
+.chat-input::placeholder{color:var(--muted)}
+.send-btn{
+  padding:6px 14px;border-radius:var(--sm);
+  border:1px solid rgba(123,200,228,0.3);
+  background:rgba(123,200,228,0.1);color:var(--primary);
+  font-size:0.8rem;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:all 0.2s;
+}
+.send-btn:hover{background:rgba(123,200,228,0.2)}
+.quick-actions{display:flex;flex-wrap:wrap;gap:4px;padding:4px 8px;border-top:1px solid var(--edge);flex-shrink:0}
+.quick-btn{
+  padding:3px 8px;border-radius:12px;
+  border:1px solid var(--edge);background:var(--glass);
+  color:var(--dim);font-size:0.65rem;font-family:inherit;
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;
+}
+.quick-btn:hover{background:rgba(123,200,228,0.1);color:var(--primary);border-color:rgba(123,200,228,0.3)}
+.chat-header-row{display:flex;align-items:center;gap:6px;padding:4px 8px;border-bottom:1px solid var(--edge);flex-shrink:0}
+.chat-header-row select{
+  background:var(--glass);border:1px solid var(--edge);
+  color:var(--text);padding:3px 8px;border-radius:var(--sm);
+  font-size:0.7rem;font-family:inherit;
+}
+.chat-header-row select option{background:#0E1628}
+.msg-copy-btn{
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:0.6rem;padding:1px 5px;border-radius:4px;opacity:0;
+  transition:opacity 0.2s,color 0.2s;flex-shrink:0;
+}
+.msg:hover .msg-copy-btn{opacity:1}
+.msg-copy-btn:hover{color:var(--primary);background:rgba(123,200,228,0.1)}
+.msg-copy-btn.copied{color:var(--success);opacity:1}
+.copy-all-btn{
+  padding:2px 8px;border-radius:4px;
+  border:1px solid var(--edge);background:var(--glass);
+  color:var(--dim);font-size:0.6rem;font-family:inherit;
+  cursor:pointer;transition:all 0.2s;margin-left:auto;white-space:nowrap;
+}
+.copy-all-btn:hover{color:var(--primary);border-color:rgba(123,200,228,0.3);background:rgba(123,200,228,0.08)}
+
+/* Gauges */
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gauge{display:flex;flex-direction:column;align-items:center;padding:6px}
+.gauge-ring{position:relative;width:64px;height:64px}
+.gauge-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge-ring circle{fill:none;stroke-linecap:round}
+.gauge-ring .gauge-bg{stroke:var(--edge);stroke-width:5}
+.gauge-ring .gauge-fg{stroke-width:5;transition:stroke-dashoffset 0.8s ease,stroke 0.5s}
+.gauge-val{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:0.8rem;font-weight:600;color:var(--text);
+}
+.gauge-label{font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+/* GPU grid */
+.gpu-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.gpu-cell{padding:6px 8px;border-radius:var(--sm);background:var(--glass);border:1px solid var(--edge)}
+.gpu-cell-label{font-size:0.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
+.gpu-val{font-family:'JetBrains Mono',monospace;font-size:0.75rem;word-break:break-all}
+
+/* Model list */
+.model-list{display:flex;flex-direction:column;gap:3px}
+.model-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 8px;border-radius:var(--sm);
+  background:var(--glass);border:1px solid var(--edge);
+}
+.model-name{font-size:0.75rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.model-size{font-size:0.65rem;color:var(--muted);margin:0 6px;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.model-del{
+  padding:2px 6px;border-radius:4px;
+  border:1px solid rgba(212,96,96,0.3);
+  background:rgba(212,96,96,0.1);color:var(--alert);
+  font-size:0.6rem;font-family:inherit;cursor:pointer;
+}
+.model-del:hover{background:rgba(212,96,96,0.25)}
+.pull-wrap{display:flex;gap:4px;margin-top:4px}
+.pull-input{
+  flex:1;background:var(--glass);border:1px solid var(--edge);
+  color:var(--text);padding:4px 6px;border-radius:var(--sm);
+  font-size:0.7rem;font-family:inherit;outline:none;
+}
+.pull-input:focus{border-color:var(--primary)}
+.pull-btn{
+  padding:4px 10px;border-radius:var(--sm);
+  border:1px solid rgba(123,200,228,0.3);
+  background:rgba(123,200,228,0.1);color:var(--primary);
+  font-size:0.7rem;font-family:inherit;cursor:pointer;
+}
+.pull-btn:hover{background:rgba(123,200,228,0.2)}
+
+/* Logs */
+.log-controls{display:flex;gap:4px;padding:2px 0 4px;flex-shrink:0}
+.log-controls select{
+  flex:1;background:var(--glass);border:1px solid var(--edge);
+  color:var(--text);padding:3px 6px;border-radius:var(--sm);
+  font-size:0.7rem;font-family:inherit;
+}
+.log-viewer{
+  background:var(--glass);border:1px solid var(--edge);
+  border-radius:var(--sm);padding:6px;
+  height:140px;overflow-y:auto;
+}
+.log-line{font-size:0.65rem;color:var(--dim);line-height:1.5;white-space:pre-wrap;word-break:break-all}
+.log-line .log-ts{color:var(--muted);margin-right:4px}
+.log-line .log-level{font-weight:600;margin-right:4px}
+.log-line .log-level.info{color:var(--primary)}
+.log-line .log-level.warn{color:var(--warning)}
+.log-line .log-level.error{color:var(--alert)}
+
+/* History */
+.history-list{display:flex;flex-direction:column;gap:3px}
+.history-item{padding:5px 8px;border-radius:var(--sm);background:var(--glass);border:1px solid var(--edge)}
+.history-subject{font-size:0.7rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-preview{font-size:0.65rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.history-time{font-size:0.55rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+/* Backlog */
+.backlog-kanban{display:flex;gap:4px;font-size:0.55rem}
+.backlog-col{flex:1;min-width:0}
+.backlog-col-title{font-weight:600;margin-bottom:2px}
+.backlog-item{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 0;font-size:0.6rem}
+.backlog-item .assignee{color:var(--accent)}
+.progress-bar{height:2px;display:inline-block;border-radius:1px}
+
+/* Misc widget content */
+.comms-item{padding:2px 4px;border-bottom:1px solid var(--edge);font-size:0.65rem}
+.subagent-item{border-bottom:1px solid var(--edge);padding:1px 0;font-size:0.6rem}
+.fleet-item{font-size:0.6rem;padding:1px 0}
+
+/* Viewscreen in chat */
+#viewscreen{
+  padding:6px 8px;font-size:0.75rem;
+  background:rgba(10,18,34,0.6);
+  border:1px solid var(--edge);border-radius:var(--sm);
+  min-height:48px;flex-shrink:0;
+  margin:0 8px 4px;
+}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface);border:1px solid var(--edge);
+  border-radius:var(--sm);padding:8px 16px;
+  font-size:0.75rem;color:var(--text);
+  backdrop-filter:blur(20px);opacity:0;
+  transition:all 0.3s;z-index:200;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Responsive */
+@media(max-width:900px){
+  #widget-grid{grid-template-columns:1fr !important}
+  .widget.wide{grid-column:span 1}
+  .widget.full{grid-column:1}
+}
+@media(max-width:600px){
+  #status-bar{padding:6px 10px}
+  .ship-name{font-size:0.85rem}
+  #widget-grid{padding:6px;gap:6px}
+}
+</style>
+</head>
+<body>
+
+<div id="status-bar">
+  <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <span class="ship-name">Starship OS</span>
+    <span class="health-dot" id="health-dot"></span>
+    <span class="status-label" id="health-label">Systems Nominal</span>
+  </div>
+  <div id="search-wrap">
+    <span id="search-icon">🔍</span>
+    <input id="search-input" type="text" placeholder="Search apps, bookmarks, agents, models..." spellcheck="false" autocomplete="off">
+    <span id="search-shortcut">Ctrl+K</span>
+    <div id="search-dropdown"></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <span class="clock" id="clock">--:--:--</span>
+  </div>
+</div>
+
+<div id="layout-bar">
+  <label>Columns:</label>
+  <select id="col-select" onchange="setColumns(this.value)">
+    <option value="auto">Auto</option>
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+  </select>
+  <button class="layout-btn" onclick="resetWidgets()">Reset Layout</button>
+</div>
+
+<div id="widget-grid"></div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+<script>
+const CIRCUMFERENCE = 2 * Math.PI * 15.9;
+let selectedAgent = 'ergo';
+
+const WIDGETS = [
+  {id:'agents',     title:'Bridge Officers',     wide:false, render:renderAgents},
+  {id:'telemetry',  title:'Telemetry',           wide:false, render:renderTelemetry},
+  {id:'gpu',        title:'GPU',                 wide:false, render:renderGPU},
+  {id:'models',     title:'Ollama Models',       wide:false, render:renderModels},
+  {id:'logs',       title:'Ship Logs',           wide:true,  render:renderLogs},
+  {id:'chat',       title:'Comms & Viewscreen',  wide:true,  render:renderChat},
+  {id:'history',    title:'Message History',     wide:false, render:renderHistory},
+  {id:'comms',      title:'Crew Comms',          wide:false, render:renderComms},
+  {id:'backlog',    title:'Backlog',             wide:true,  render:renderBacklog},
+  {id:'governance', title:'Governance',          wide:false, render:renderGovernance},
+  {id:'fleet',      title:'Flamingo Fleet',       wide:false, render:renderFleet},
+  {id:'subagents',  title:'Sub-Agents',          wide:false, render:renderSubagents},
+  {id:'terminal',   title:'Terminal',            wide:true,  render:renderTerminal, noAutoRefresh:true},
+];
+
+let widgetOrder = [];
+let dragSrcId = null;
+
+function loadOrder() {
+  try {
+    const saved = localStorage.getItem('starship-widget-order');
+    if (saved) {
+      const order = JSON.parse(saved);
+      widgetOrder = order.filter(id => WIDGETS.some(w => w.id === id));
+      const missing = WIDGETS.filter(w => !order.includes(w.id)).map(w => w.id);
+      widgetOrder.push(...missing);
+      return;
+    }
+  } catch(e) {}
+  widgetOrder = WIDGETS.map(w => w.id);
+}
+
+function saveOrder() {
+  try { localStorage.setItem('starship-widget-order', JSON.stringify(widgetOrder)); } catch(e) {}
+}
+
+// Resize state
+let widgetSizes = {};
+
+function loadSizes() {
+  try {
+    const saved = localStorage.getItem('starship-widget-sizes');
+    if (saved) widgetSizes = JSON.parse(saved);
+  } catch(e) {}
+  for (const w of WIDGETS) { if (!widgetSizes[w.id]) widgetSizes[w.id] = 'normal'; }
+}
+
+function saveSizes() {
+  try { localStorage.setItem('starship-widget-sizes', JSON.stringify(widgetSizes)); } catch(e) {}
+}
+
+const SIZE_CYCLE = ['normal', 'wide', 'tall', 'full'];
+const SIZE_ICONS = {normal:'⤢', wide:'↔', tall:'↕', full:'⤡'};
+
+function cycleWidgetSize(id) {
+  const cur = widgetSizes[id] || 'normal';
+  const idx = SIZE_CYCLE.indexOf(cur);
+  const next = SIZE_CYCLE[(idx + 1) % SIZE_CYCLE.length];
+  widgetSizes[id] = next;
+  saveSizes();
+  const w = document.querySelector(`.widget[data-id="${id}"]`);
+  if (!w) return;
+  w.className = w.className.split(' ').filter(c => !c.startsWith('size-') && c !== 'wide' && c !== 'tall' && c !== 'full').join(' ');
+  w.classList.add('size-'+next);
+  if (next === 'wide') w.classList.add('wide');
+  else if (next === 'tall') w.classList.add('tall');
+  else if (next === 'full') w.classList.add('full');
+  const btn = w.querySelector('.widget-resize');
+  if (btn) { btn.textContent = SIZE_ICONS[next]; btn.className = 'widget-resize ' + next; }
+  toast('Widget: ' + next);
+}
+
+function getColumns() {
+  try { return localStorage.getItem('starship-columns') || 'auto'; } catch(e) { return 'auto'; }
+}
+
+function setColumns(v) {
+  try { localStorage.setItem('starship-columns', v); } catch(e) {}
+  applyColumns(v);
+}
+
+function applyColumns(v) {
+  const grid = document.getElementById('widget-grid');
+  grid.className = '';
+  if (v === '1') grid.classList.add('columns-1');
+  else if (v === '2') grid.classList.add('columns-2');
+  else if (v === '3') grid.classList.add('columns-3');
+}
+
+function resetWidgets() {
+  localStorage.removeItem('starship-widget-order');
+  localStorage.removeItem('starship-columns');
+  localStorage.removeItem('starship-widget-sizes');
+  widgetOrder = WIDGETS.map(w => w.id);
+  widgetSizes = {};
+  for (const w of WIDGETS) widgetSizes[w.id] = 'normal';
+  document.getElementById('col-select').value = 'auto';
+  buildGrid();
+  saveOrder();
+}
+
+// Drag & Drop
+function onDragStart(e) {
+  dragSrcId = e.target.closest('.widget').dataset.id;
+  e.target.closest('.widget').classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragSrcId);
+}
+
+function onDragEnd(e) {
+  e.target.closest('.widget').classList.remove('dragging');
+  document.querySelectorAll('.widget').forEach(el => el.classList.remove('drag-over','drag-over-top','drag-over-bot'));
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const w = e.target.closest('.widget');
+  if (!w || w.dataset.id === dragSrcId) return;
+  const rect = w.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  w.classList.remove('drag-over','drag-over-top','drag-over-bot');
+  if (e.clientY < mid) w.classList.add('drag-over','drag-over-top');
+  else w.classList.add('drag-over','drag-over-bot');
+}
+
+function onDragLeave(e) {
+  const w = e.target.closest('.widget');
+  if (w) w.classList.remove('drag-over','drag-over-top','drag-over-bot');
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  const target = e.target.closest('.widget');
+  if (!target || target.dataset.id === dragSrcId) return;
+  const rect = target.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  const fromIdx = widgetOrder.indexOf(dragSrcId);
+  const toIdx = widgetOrder.indexOf(target.dataset.id);
+  if (fromIdx === -1 || toIdx === -1) return;
+  widgetOrder.splice(fromIdx, 1);
+  const newToIdx = widgetOrder.indexOf(target.dataset.id);
+  const insertAt = e.clientY < mid ? newToIdx : newToIdx + 1;
+  widgetOrder.splice(insertAt, 0, dragSrcId);
+  saveOrder();
+  buildGrid();
+}
+
+function buildGrid() {
+  const grid = document.getElementById('widget-grid');
+  applyColumns(getColumns());
+  grid.innerHTML = '';
+  const cols = document.getElementById('col-select');
+  cols.value = getColumns();
+
+  for (const id of widgetOrder) {
+    const def = WIDGETS.find(w => w.id === id);
+    if (!def) continue;
+    const w = document.createElement('div');
+    w.className = 'widget' + (def.wide ? ' wide' : '');
+    w.dataset.id = id;
+    w.draggable = true;
+    w.ondragstart = onDragStart;
+    w.ondragend = onDragEnd;
+    w.ondragover = onDragOver;
+    w.ondragleave = onDragLeave;
+    w.ondrop = onDrop;
+
+    const curSize = widgetSizes[id] || 'normal';
+    w.classList.add('size-'+curSize);
+    if (curSize === 'wide') w.classList.add('wide');
+    else if (curSize === 'tall') w.classList.add('tall');
+    else if (curSize === 'full') w.classList.add('full');
+    const sizeIcon = curSize === 'full' ? '⤡' : (curSize === 'wide' ? '↔' : (curSize === 'tall' ? '↕' : '⤢'));
+    w.innerHTML = `<div class="widget-header">
+      <span class="widget-handle">≡</span>
+      <span class="widget-title">${def.title}</span>
+      <button class="widget-resize ${curSize}" onclick="cycleWidgetSize('${id}')" title="Resize widget">${sizeIcon}</button>
+      <button class="widget-toggle" onclick="toggleWidget(this)" data-widget="${id}">▼</button>
+    </div>
+    <div class="widget-body" id="wb-${id}"></div>`;
+    grid.appendChild(w);
+
+    const body = w.querySelector('.widget-body');
+    if (def.render) def.render(body, null);
+  }
+}
+
+function toggleWidget(btn) {
+  const body = btn.closest('.widget').querySelector('.widget-body');
+  body.classList.toggle('collapsed');
+  btn.classList.toggle('collapsed');
+}
+
+function escapeHTML(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ─── Universal Search ──────────────────────────────────────────
+let searchConfig = {apps:[], bookmarks:[]};
+let searchResults = [];
+let searchHighlight = -1;
+
+async function loadSearchConfig() {
+  const data = await fetchJSON('/api/search/config');
+  if (data) searchConfig = data;
+}
+
+function highlightMatch(text, query) {
+  if (!query) return escapeHTML(text);
+  const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return escapeHTML(text).replace(re, '<span class="match">$1</span>');
+}
+
+function closeSearch() {
+  document.getElementById('search-dropdown').classList.remove('open');
+  document.getElementById('search-dropdown').innerHTML = '';
+  searchHighlight = -1;
+}
+
+function doSearch() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  const dd = document.getElementById('search-dropdown');
+  if (!q) { dd.classList.remove('open'); dd.innerHTML = ''; searchHighlight = -1; return; }
+  searchResults = [];
+  const groups = [];
+  // Apps
+  const apps = searchConfig.apps.filter(a => (a.name+' '+a.description).toLowerCase().includes(q));
+  if (apps.length) groups.push({title:'Apps', items:apps.map(a => ({...a, icon:'⚡', type:'app'}))});
+  // Bookmarks
+  const bm = searchConfig.bookmarks.filter(b => (b.name+' '+b.description).toLowerCase().includes(q));
+  if (bm.length) groups.push({title:'Bookmarks', items:bm.map(b => ({...b, icon:'🔗', type:'bookmark'}))});
+  // Agents (from live dashboard data)
+  if (_lastData && _lastData.agents) {
+    const agents = Object.entries(_lastData.agents).filter(([k,v]) => (k+' '+(v.name||'')+' '+(v.role||'')).toLowerCase().includes(q));
+    if (agents.length) groups.push({title:'Agents', items:agents.map(([k,v]) => ({name:v.name||k, description:v.role||v.model||'', url:null, action:'chat', icon:'🤖', type:'agent', id:k}))});
+  }
+  // Ollama models
+  if (_lastData && _lastData.ollama && _lastData.ollama.models) {
+    const models = _lastData.ollama.models.filter(m => (m.name||'').toLowerCase().includes(q));
+    if (models.length) groups.push({title:'Models', items:models.map(m => ({name:m.name, description:'model', url:null, action:'model', icon:'🧠', type:'model', id:m.name}))});
+  }
+  if (groups.length === 0) {
+    dd.innerHTML = '<div style="padding:10px;font-size:0.7rem;color:var(--muted);text-align:center">No results for "'+escapeHTML(q)+'"</div>';
+  } else {
+    let html = '';
+    for (const g of groups) {
+      html += '<div class="search-group"><div class="search-group-title">'+escapeHTML(g.title)+'</div>';
+      for (const item of g.items) {
+        searchResults.push(item);
+        const idx = searchResults.length - 1;
+        html += `<div class="search-item" data-idx="${idx}" onclick="activateSearch(${idx})">
+          <span class="search-item-icon">${item.icon}</span>
+          <div class="search-item-info">
+            <div class="search-item-name">${highlightMatch(item.name, q)}</div>
+            <div class="search-item-desc">${escapeHTML(item.description||item.url||'')}</div>
+          </div>
+          <span class="search-item-action">${item.action ? escapeHTML(item.action) : '↗'}</span>
+        </div>`;
+      }
+      html += '</div>';
+    }
+    dd.innerHTML = html;
+  }
+  dd.classList.add('open');
+  searchHighlight = -1;
+}
+
+function activateSearch(idx) {
+  const item = searchResults[idx];
+  if (!item) return;
+  closeSearch();
+  document.getElementById('search-input').value = '';
+  if (item.type === 'app' || item.type === 'bookmark') {
+    window.open(item.url, '_blank');
+    toast('Opening ' + item.name);
+  } else if (item.type === 'agent') {
+    selectAgent(item.id);
+    toast('Selected agent: ' + item.name);
+  } else if (item.type === 'model') {
+    const pullInput = document.getElementById('pull-input');
+    if (pullInput) { pullInput.value = item.id; toast('Model: ' + item.name); }
+  }
+}
+
+function onSearchKeydown(e) {
+  const dd = document.getElementById('search-dropdown');
+  const items = dd.querySelectorAll('.search-item');
+  if (e.key === 'Escape') { closeSearch(); e.target.blur(); return; }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    searchHighlight = Math.min(searchHighlight + 1, items.length - 1);
+    items.forEach((el,i) => el.classList.toggle('highlighted', i === searchHighlight));
+    if (items[searchHighlight]) items[searchHighlight].scrollIntoView({block:'nearest'});
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    searchHighlight = Math.max(searchHighlight - 1, -1);
+    items.forEach((el,i) => el.classList.toggle('highlighted', i === searchHighlight));
+    if (items[searchHighlight]) items[searchHighlight].scrollIntoView({block:'nearest'});
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (searchHighlight >= 0 && items[searchHighlight]) {
+      const idx = parseInt(items[searchHighlight].dataset.idx);
+      activateSearch(idx);
+    } else if (items.length > 0) {
+      const idx = parseInt(items[0].dataset.idx);
+      activateSearch(idx);
+    }
+  }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB',{hour12:false});
+}
+
+function setGauge(id, pct) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const offset = CIRCUMFERENCE - Math.min(pct,100)/100 * CIRCUMFERENCE;
+  el.style.strokeDasharray = `${CIRCUMFERENCE}`;
+  el.style.strokeDashoffset = offset;
+  let color = 'var(--success)';
+  if (pct > 80) color = 'var(--alert)';
+  else if (pct > 60) color = 'var(--warning)';
+  el.style.stroke = color;
+}
+
+function formatSize(bytes) {
+  if (bytes == null) return '--';
+  if (bytes >= 1e9) return (bytes/1e9).toFixed(1)+' GB';
+  if (bytes >= 1e6) return (bytes/1e6).toFixed(0)+' MB';
+  return bytes+' B';
+}
+
+// Widget renderers
+function renderAgents(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:4px">Loading...</div>'; return; }
+  const agents = data.agents || {};
+  const keys = Object.keys(agents);
+  let html = '<div class="agent-list">';
+  for (const key of keys) {
+    const a = agents[key];
+    const online = a.status === 'online' || a.running;
+    const sel = key === selectedAgent ? ' selected' : '';
+    const ram = a.ram_mb || 0;
+    const role = a.role || '';
+    html += `<div class="agent-item${sel}" onclick="selectAgent('${escapeHTML(key)}')">
+      <div class="agent-dot ${online?'online':'offline'}"></div>
+      <div class="agent-info">
+        <div class="agent-name">${escapeHTML(a.name||key)} <span style="font-size:0.6rem;color:var(--muted)">${escapeHTML(role)}</span></div>
+        <div class="agent-meta"><span class="agent-model">${escapeHTML(a.model||'--')}</span> <span class="agent-status${a.running?'':' idle'}">${a.running?'Running':'Idle'}</span> <span style="color:var(--dim)">${ram}MB</span></div>
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function renderTelemetry(body, data) {
+  if (!data) { body.innerHTML = '<div class="gauges" id="gauges"><div style="color:var(--muted);font-size:0.75rem;grid-column:1/-1;padding:4px">Loading...</div></div>'; return; }
+  const tel = (data.telemetry && data.telemetry.full) || data.telemetry || {};
+  const cpu = parseFloat(tel.cpu || tel.cpu_percent || 0);
+  const ram = parseFloat(tel.ram || tel.ram_percent || tel.memory_percent || 0);
+  const disk = parseFloat(tel.disk || tel.disk_percent || 0);
+  const load = tel.load || {};
+  const loadStr = load['1min'] ? `Load: ${load['1min']}/${load['5min']}/${load['15min']}` : '';
+  body.innerHTML = `<div class="gauges">
+    <div class="gauge"><div class="gauge-ring"><svg viewBox="0 0 36 36"><circle class="gauge-bg" cx="18" cy="18" r="15.9"/><circle class="gauge-fg" id="gauge-cpu" cx="18" cy="18" r="15.9" stroke="var(--primary)" stroke-dasharray="0 100"/></svg><div class="gauge-val" id="val-cpu">${cpu.toFixed(1)}%</div></div><div class="gauge-label">CPU</div></div>
+    <div class="gauge"><div class="gauge-ring"><svg viewBox="0 0 36 36"><circle class="gauge-bg" cx="18" cy="18" r="15.9"/><circle class="gauge-fg" id="gauge-ram" cx="18" cy="18" r="15.9" stroke="var(--success)" stroke-dasharray="0 100"/></svg><div class="gauge-val" id="val-ram">${ram.toFixed(1)}%</div></div><div class="gauge-label">RAM</div></div>
+    <div class="gauge"><div class="gauge-ring"><svg viewBox="0 0 36 36"><circle class="gauge-bg" cx="18" cy="18" r="15.9"/><circle class="gauge-fg" id="gauge-disk" cx="18" cy="18" r="15.9" stroke="var(--accent)" stroke-dasharray="0 100"/></svg><div class="gauge-val" id="val-disk">${disk.toFixed(1)}%</div></div><div class="gauge-label">Disk</div></div>
+    <div class="gauge"><div class="gauge-ring"><svg viewBox="0 0 36 36"><circle class="gauge-bg" cx="18" cy="18" r="15.9"/><circle class="gauge-fg" id="gauge-net" cx="18" cy="18" r="15.9" stroke="var(--warning)" stroke-dasharray="0 100"/></svg><div class="gauge-val" id="val-net">--%</div></div><div class="gauge-label">System</div></div>
+  </div>${loadStr ? `<div style="font-size:0.6rem;color:var(--muted);text-align:center;margin-top:4px">${escapeHTML(loadStr)}</div>` : ''}`;
+  setGauge('gauge-cpu', cpu);
+  setGauge('gauge-ram', ram);
+  setGauge('gauge-disk', disk);
+  document.getElementById('gauge-net') && setGauge('gauge-net', Math.min(cpu, 100));
+}
+
+function renderGPU(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:4px">Loading...</div>'; return; }
+  const gpu = data.gpu || {};
+  body.innerHTML = `<div class="gpu-grid">
+    <div class="gpu-cell"><div class="gpu-cell-label">Vendor</div><div class="gpu-val">${escapeHTML(gpu.vendor||'--')}</div></div>
+    <div class="gpu-cell"><div class="gpu-cell-label">Name</div><div class="gpu-val">${escapeHTML(gpu.name||'--')}</div></div>
+    <div class="gpu-cell"><div class="gpu-cell-label">Driver</div><div class="gpu-val">${escapeHTML(gpu.driver_version||gpu.driver||'--')}</div></div>
+    <div class="gpu-cell"><div class="gpu-cell-label">CUDA</div><div class="gpu-val">${escapeHTML(gpu.cuda_version||gpu.cuda||'--')}</div></div>
+    <div class="gpu-cell" style="grid-column:1/-1"><div class="gpu-cell-label">VRAM</div><div class="gpu-val">${escapeHTML(gpu.vram||'--')}</div></div>
+  </div>`;
+}
+
+function renderModels(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:4px">Loading...</div><div class="pull-wrap"><input class="pull-input" id="pull-input" type="text" placeholder="model name..."><button class="pull-btn" onclick="pullModel()">Pull</button></div>'; return; }
+  const models = (data.ollama && data.ollama.models) || [];
+  let html = '<div class="model-list">';
+  if (models.length === 0) {
+    html += '<div style="padding:4px;color:var(--muted);font-size:0.7rem">No models installed</div>';
+  } else {
+    for (const m of models) {
+      const name = m.name || m.model || m;
+      const size = typeof m === 'object' ? m.size : null;
+      html += `<div class="model-item"><span class="model-name">${escapeHTML(String(name))}</span><span class="model-size">${formatSize(size)}</span><button class="model-del" onclick="deleteModel('${escapeHTML(String(name))}')">✕</button></div>`;
+    }
+  }
+  html += '</div><div class="pull-wrap"><input class="pull-input" id="pull-input" type="text" placeholder="model name..."><button class="pull-btn" onclick="pullModel()">Pull</button></div>';
+  body.innerHTML = html;
+}
+
+function renderLogs(body, data) {
+  body.innerHTML = `<div class="log-controls"><select id="log-agent-select" onchange="loadLogs()"><option value="">All Agents</option></select></div><div class="log-viewer" id="log-viewer"><div class="log-line" style="color:var(--muted)">No logs available</div></div>`;
+  if (data) loadLogs();
+}
+
+function renderChat(body, data) {
+  if (!data && !body.querySelector('.chat-messages')) {
+    body.innerHTML = `<div id="viewscreen" style="cursor:pointer" onclick="copyViewscreen()" title="Click to copy viewscreen">Bridge viewscreen active. Awaiting telemetry & officer reports...</div>
+      <div class="chat-header-row"><span style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Comms</span><select id="chat-agent-select"></select><button class="copy-all-btn" onclick="copyChat()">Copy All</button></div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="quick-actions">
+        <button class="quick-btn" onclick="quickAction('ergo','status')">Ergo Status</button>
+        <button class="quick-btn" onclick="quickAction('romi','check')">Romi Check</button>
+        <button class="quick-btn" onclick="quickAction('proxy','hello proxy, what is the security status of this device?')">Proxy Security</button>
+        <button class="quick-btn" onclick="quickAction('orchestrator','status')">Orch Status</button>
+        <button class="quick-btn" onclick="quickAction('system_health','report')">Sys Health</button>
+      </div>
+      <div class="chat-input-row"><input class="chat-input" id="chat-input" type="text" placeholder="Enter command..." onkeydown="if(event.key==='Enter')sendCommand()"><button class="send-btn" onclick="sendCommand()">Send</button></div>`;
+    return;
+  }
+  if (data && data.agents) {
+    const keys = Object.keys(data.agents);
+    const sel = document.getElementById('chat-agent-select');
+    if (sel) {
+      let opts = '';
+      for (const key of keys) opts += `<option value="${escapeHTML(key)}">${escapeHTML(data.agents[key].name||key)}</option>`;
+      sel.innerHTML = opts;
+      if (!sel.value && keys.length) sel.value = keys.includes(selectedAgent) ? selectedAgent : keys[0];
+    }
+  }
+}
+
+function renderHistory(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:4px">Loading...</div>'; return; }
+  const msgs = (data.messages || data.history || []).slice(0,15);
+  if (msgs.length === 0) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">No history</div>'; return; }
+  let html = '<div class="history-list">';
+  for (const m of msgs) {
+    const ts = m.time || m.timestamp || '';
+    const subject = m.subject || m.agent || m.from || '';
+    const preview = m.preview || m.message || m.text || m.body || '';
+    html += `<div class="history-item"><div class="history-time">${escapeHTML(String(ts))}</div><div class="history-subject">${escapeHTML(String(subject))}</div><div class="history-preview">${escapeHTML(String(preview))}</div></div>`;
+  }
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function renderComms(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">Loading...</div>'; return; }
+  const comms = data.internal_comms || [];
+  if (comms.length === 0) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">No summarized comms yet</div>'; return; }
+  let html = '';
+  for (const c of comms.slice(0,10)) {
+    const ts = (c.ts||'').split('T')[1] || c.ts || '';
+    html += `<div class="comms-item"><span style="color:var(--muted)">${escapeHTML(ts)}</span> <span style="color:var(--primary)">${escapeHTML(c.agent||'')}</span>: ${escapeHTML(c.summary||'')}</div>`;
+  }
+  body.innerHTML = html;
+}
+
+function renderBacklog(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">Loading...</div>'; return; }
+  const items = data.backlog || [];
+  if (items.length === 0) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">No backlog items</div>'; return; }
+  const groups = {todo:[], in_progress:[], done:[], blocked:[]};
+  const order = {"goal":0,"project":1,"task":2,"subtask":3};
+  items.sort((a,b) => (order[a.type]||99) - (order[b.type]||99));
+  for (const it of items) {
+    const st = it.status || 'todo';
+    (groups[st] || groups.todo).push(it);
+  }
+  let html = '<div class="backlog-kanban">';
+  for (const [st, list] of Object.entries(groups)) {
+    if (list.length === 0) continue;
+    const color = st === 'in_progress' ? 'var(--primary)' : (st === 'done' ? 'var(--success)' : 'var(--muted)');
+    html += `<div class="backlog-col"><div class="backlog-col-title" style="color:${color}">${st.replace('_',' ')}</div>`;
+    for (const it of list.slice(0,4)) {
+      const ass = it.assignee ? ` <span class="assignee">@${escapeHTML(it.assignee)}</span>` : '';
+      const bar = st === 'in_progress' ? '<span class="progress-bar" style="background:var(--primary);width:40%"></span>' : (st === 'done' ? '<span class="progress-bar" style="background:var(--success);width:100%"></span>' : '');
+      html += `<div class="backlog-item">${escapeHTML(it.title||'')} ${ass} ${bar}</div>`;
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function renderGovernance(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">Loading...</div>'; return; }
+  const gov = data.governance || {};
+  const en = gov.enabled ? 'ON' : 'OFF';
+  body.innerHTML = `<div style="font-size:0.7rem">Gov: <span style="color:${gov.enabled?'var(--success)':'var(--alert)'}">${en}</span>${gov.kill ? ' | Kill: active='+gov.kill.active : ''}</div>`;
+}
+
+function renderFleet(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">Loading...</div>'; return; }
+  const fleet = data.flamingo_fleet || [];
+  if (fleet.length === 0) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">No fleet agents</div>'; return; }
+  let html = '';
+  for (const f of fleet.slice(0,6)) {
+    html += `<div class="fleet-item">${escapeHTML(f.agent_name||f.hostname||'')} [${escapeHTML(f.status||'unknown')}]</div>`;
+  }
+  body.innerHTML = html;
+}
+
+function renderSubagents(body, data) {
+  if (!data) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">Loading...</div>'; return; }
+  const subs = data.subagents || [];
+  if (subs.length === 0) { body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:4px">No sub-agents</div>'; return; }
+  let html = '';
+  for (const s of subs.slice(0,6)) {
+    const task = s.current_task || s.role || '';
+    html += `<div class="subagent-item"><span style="color:var(--primary)">${escapeHTML(s.name||'')}</span> [${escapeHTML(s.status||'running')}]<br><span style="font-size:0.55em">${escapeHTML(task)}</span></div>`;
+  }
+  body.innerHTML = html;
+}
+
+// ─── Terminal Widget ────────────────────────────────────────────
+let _term = null;
+let _termWs = null;
+let _termWidgetId = null;
+
+function renderTerminal(body, data) {
+  if (body.querySelector('#terminal-container')) return;
+  body.innerHTML = '<div id="terminal-container"></div>';
+  const w = body.closest('.widget');
+  if (w) { w.classList.add('terminal-widget'); _termWidgetId = w.dataset.id; }
+  initTerminal();
+}
+
+function initTerminal() {
+  const container = document.getElementById('terminal-container');
+  if (!container || _term) return;
+
+  if (typeof Terminal === 'undefined') {
+    setTimeout(initTerminal, 500);
+    return;
+  }
+
+  _term = new Terminal({
+    cursorBlink: true,
+    cursorStyle: 'block',
+    fontSize: 13,
+    fontFamily: "'JetBrains Mono','Fira Code',monospace",
+    theme: {
+      background: '#070B14',
+      foreground: '#E4DDD0',
+      cursor: '#7BC8E4',
+      selectionBackground: 'rgba(123,200,228,0.2)',
+      black: '#1a1a2e',
+      red: '#D46060',
+      green: '#7BC8A4',
+      yellow: '#D4A060',
+      blue: '#7BC8E4',
+      magenta: '#C4A97D',
+      cyan: '#60D4C4',
+      white: '#E4DDD0',
+      brightBlack: '#5A6A80',
+      brightRed: '#D46060',
+      brightGreen: '#7BC8A4',
+      brightYellow: '#D4A060',
+      brightBlue: '#7BC8E4',
+      brightMagenta: '#C4A97D',
+      brightCyan: '#60D4C4',
+      brightWhite: '#E4DDD0',
+    },
+    allowTransparency: true,
+    convertEol: true,
+  });
+
+  const fitAddon = new FitAddon.FitAddon();
+  _term.loadAddon(fitAddon);
+  _term.open(container);
+  fitAddon.fit();
+
+  const ro = new ResizeObserver(() => { fitAddon.fit(); });
+  ro.observe(container);
+
+  const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const wsUrl = wsProto + '://' + location.host + '/api/terminal/ws';
+  _termWs = new WebSocket(wsUrl);
+  _termWs.binaryType = 'arraybuffer';
+
+  _termWs.onopen = () => {
+    _term.focus();
+    setTimeout(() => fitAddon.fit(), 100);
+    _term.onResize(({cols, rows}) => {
+      if (_termWs && _termWs.readyState === WebSocket.OPEN) {
+        _termWs.send(JSON.stringify({type:'resize', cols, rows}));
+      }
+    });
+  };
+
+  _termWs.onmessage = (ev) => {
+    if (ev.data instanceof ArrayBuffer) {
+      _term.write(new Uint8Array(ev.data));
+    } else {
+      try {
+        const msg = JSON.parse(ev.data);
+        if (msg.type === 'exit') {
+          _term.write('\r\n\x1b[31m[Session ended]\x1b[0m\r\n');
+          _termWs.close();
+        }
+      } catch(e) {
+        _term.write(ev.data);
+      }
+    }
+  };
+
+  _termWs.onclose = () => {
+    _term.write('\r\n\x1b[31m[Disconnected] Click to reconnect\x1b[0m\r\n');
+  };
+
+  _term.onData((data) => {
+    if (_termWs && _termWs.readyState === WebSocket.OPEN) {
+      _termWs.send(data);
+    }
+  });
+
+  window.addEventListener('resize', () => fitAddon.fit());
+}
+
+function reconnectTerminal() {
+  if (_term) { _term.dispose(); _term = null; }
+  if (_termWs) { _termWs.close(); _termWs = null; }
+  initTerminal();
+}
+
+// Data fetch and refresh
+let _lastData = null;
+
+async function refresh() {
+  const data = await fetchJSON('/api/dashboard');
+  if (!data) return;
+  _lastData = data;
+
+  // Health dot
+  const dot = document.getElementById('health-dot');
+  const label = document.getElementById('health-label');
+  const ok = data.status === 'ok' || data.status === 'online';
+  if (dot) { dot.className = 'health-dot' + (ok ? '' : ' alert'); }
+  if (label) { label.textContent = ok ? 'Systems Nominal' : 'Degraded'; }
+
+  // Re-render all visible widgets (skip noAutoRefresh widgets like terminal)
+  for (const def of WIDGETS) {
+    if (def.noAutoRefresh) continue;
+    const body = document.getElementById(`wb-${def.id}`);
+    if (!body || body.classList.contains('collapsed')) continue;
+    def.render(body, data);
+  }
+
+  // Update chat select if present
+  const chatSel = document.getElementById('chat-agent-select');
+  if (chatSel && data.agents) {
+    const keys = Object.keys(data.agents);
+    let opts = '';
+    for (const key of keys) opts += `<option value="${escapeHTML(key)}">${escapeHTML(data.agents[key].name||key)}</option>`;
+    chatSel.innerHTML = opts;
+    if (!chatSel.value && keys.length) chatSel.value = keys.includes(selectedAgent) ? selectedAgent : keys[0];
+  }
+
+  // Viewscreen HUD
+  const vs = document.getElementById('viewscreen');
+  if (vs) {
+    const tel = (data.telemetry && data.telemetry.full) || data.telemetry || {};
+    const cpu = parseFloat(tel.cpu || tel.cpu_percent || 0);
+    const ram = parseFloat(tel.ram || tel.ram_percent || tel.memory_percent || 0);
+    const disk = parseFloat(tel.disk || tel.disk_percent || 0);
+    const commsPreview = (data.internal_comms && data.internal_comms[0]) ? data.internal_comms[0].summary : 'No recent bridge comms';
+    const gpuName = (data.gpu && data.gpu.name) ? data.gpu.name : 'No GPU';
+    vs.innerHTML = `CPU ${cpu.toFixed(0)}% | RAM ${ram.toFixed(0)}% | Disk ${disk.toFixed(0)}% | ${escapeHTML(gpuName)}<br><span style="color:var(--accent)">${escapeHTML(commsPreview)}</span>`;
+  vs.style.cursor = 'pointer';
+  vs.title = 'Click to copy viewscreen';
+  vs.onclick = copyViewscreen;
+  }
+}
+
+async function fetchJSON(url, opts) {
+  try {
+    const r = await fetch(url, opts);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  } catch(e) {
+    console.error('fetchJSON error:', url, e);
+    return null;
+  }
+}
+
+function selectAgent(name) {
+  selectedAgent = name;
+  const chatSel = document.getElementById('chat-agent-select');
+  if (chatSel) chatSel.value = name;
+  document.querySelectorAll('.agent-item').forEach(el => el.classList.remove('selected'));
+  refresh();
+}
+
+function addMessage(sender, text, isUser, agent) {
+  const container = document.getElementById('chat-messages');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'msg ' + (isUser ? 'user' : 'agent-msg');
+  if (agent) div.setAttribute('data-agent', agent);
+  const now = new Date().toLocaleTimeString('en-GB',{hour12:false});
+  const label = isUser ? 'You' : (agent || sender);
+  div.innerHTML = `<div class="msg-sender">${escapeHTML(sender)} <button class="msg-copy-btn" onclick="copyMessage(this)" title="Copy message">📋</button></div><div class="msg-text">${escapeHTML(text)}</div><div class="msg-time">${now}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function copyMessage(btn) {
+  const text = btn.closest('.msg').querySelector('.msg-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 1500);
+  }).catch(() => toast('Copy failed'));
+}
+
+function copyChat() {
+  const msgs = document.querySelectorAll('#chat-messages .msg');
+  if (!msgs.length) { toast('No messages to copy'); return; }
+  let lines = [];
+  for (const m of msgs) {
+    const sender = m.querySelector('.msg-sender').textContent.trim();
+    const text = m.querySelector('.msg-text').textContent;
+    lines.push(sender + ': ' + text);
+  }
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    toast('Chat copied (' + msgs.length + ' messages)');
+  }).catch(() => toast('Copy failed'));
+}
+
+function copyViewscreen() {
+  const vs = document.getElementById('viewscreen');
+  if (!vs) return;
+  const text = vs.textContent.trim();
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    toast('Viewscreen copied');
+  }).catch(() => toast('Copy failed'));
+}
+
+async function sendCommand() {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  const agent = (document.getElementById('chat-agent-select') || {}).value || selectedAgent;
+  addMessage('Commander', text, true);
+  const resp = await fetchJSON('/api/send', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({agent, command:text, args:[]})
+  });
+  if (resp) {
+    addMessage(resp.agent || agent, resp.response || resp.message || resp.result || resp.error || JSON.stringify(resp), false, resp.agent || agent);
+  } else {
+    addMessage('System', 'Error: No response from server.', false, 'system');
+  }
+}
+
+function quickAction(agent, command) {
+  const sel = document.getElementById('chat-agent-select');
+  if (sel) sel.value = agent;
+  const input = document.getElementById('chat-input');
+  if (input) input.value = command;
+  sendCommand();
+}
+
+async function loadLogs() {
+  const sel = document.getElementById('log-agent-select');
+  if (!sel) return;
+  const agent = sel.value;
+  const viewer = document.getElementById('log-viewer');
+  if (!viewer) return;
+  const data = await fetchJSON('/api/logs' + (agent ? '?agent='+encodeURIComponent(agent) : ''));
+  if (!data) { viewer.innerHTML = '<div class="log-line" style="color:var(--muted)">No logs available</div>'; return; }
+  const logs = data.logs || data.lines || data || [];
+  if (!Array.isArray(logs) || logs.length === 0) { viewer.innerHTML = '<div class="log-line" style="color:var(--muted)">No logs available</div>'; return; }
+  let html = '';
+  for (const l of logs.slice(-50)) {
+    const ts = l.time || l.timestamp || '';
+    const level = (l.level || 'info').toLowerCase();
+    const msg = l.message || l.msg || l.text || JSON.stringify(l);
+    html += `<div class="log-line"><span class="log-ts">${escapeHTML(String(ts))}</span><span class="log-level ${level}">${escapeHTML(level.toUpperCase())}</span>${escapeHTML(String(msg))}</div>`;
+  }
+  viewer.innerHTML = html;
+  viewer.scrollTop = viewer.scrollHeight;
+}
+
+async function pullModel() {
+  const input = document.getElementById('pull-input');
+  if (!input) return;
+  const model = input.value.trim();
+  if (!model) return;
+  input.value = '';
+  toast('Pulling '+model+'...');
+  const resp = await fetchJSON('/api/ollama/pull', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({model})
+  });
+  toast(resp && resp.error ? 'Error: '+resp.error : 'Pull started');
+  if (!resp || !resp.error) setTimeout(refresh, 2000);
+}
+
+async function deleteModel(name) {
+  if (!confirm('Delete model '+name+'?')) return;
+  toast('Deleting...');
+  const resp = await fetchJSON('/api/ollama/delete', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({model:name})
+  });
+  toast(resp && resp.error ? 'Error: '+resp.error : 'Deleted');
+  setTimeout(refresh, 1000);
+}
+
+// Init
+loadOrder();
+loadSizes();
+buildGrid();
+updateClock();
+setInterval(updateClock, 1000);
+refresh();
+setInterval(refresh, 4000);
+setInterval(loadLogs, 6000);
+loadSearchConfig();
+
+// Search input events
+document.getElementById('search-input').addEventListener('input', doSearch);
+document.getElementById('search-input').addEventListener('keydown', onSearchKeydown);
+document.getElementById('search-input').addEventListener('blur', () => setTimeout(closeSearch, 200));
+document.getElementById('search-input').addEventListener('focus', doSearch);
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('search-input').focus();
+  }
+});
+</script>
+</body>
+</html>

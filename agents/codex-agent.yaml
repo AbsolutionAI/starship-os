@@ -1,0 +1,38 @@
+name: codex-agent
+role: coding_specialist
+model: qwen2.5:7b
+provider: ollama
+models:
+  default: qwen2.5:7b
+  available:
+    - qwen2.5:7b
+    - qwen2.5:3b
+  providers:
+    openrouter:
+      - openai/gpt-4o-mini
+      - deepseek/deepseek-chat
+      - anthropic/claude-3.5-haiku
+  switch_logic: "code generation|refactor|debug -> qwen2.5:7b or cloud; simple scripts -> qwen2.5:3b"
+
+capabilities:
+  - code_generation
+  - refactoring
+  - debugging
+  - code_review
+  - file_operations
+  - os_expansion
+
+toolsets:
+  - terminal
+  - file_operations
+  - coding
+  - delegation
+  - planning
+  - network
+  - nats
+
+nats:
+  subjects:
+    command: "agnetic.agent.codex-agent.command.>"
+    event: "agnetic.agent.codex-agent.event.>"
+    status: "agnetic.agent.codex-agent.status"

@@ -1,0 +1,14 @@
+# Starship OS default reasoning model alias
+# Upstream: jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged
+# Create: ollama create Eve-V2-Unleashed -f /etc/starship/models/Eve-V2-Unleashed.Modelfile
+#
+# Infrastructure default context: 16384 (server). Use 8192 edge / 32768 ops if VRAM allows.
+
+FROM jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
+
+PARAMETER num_ctx 16384
+PARAMETER num_predict 8192
+PARAMETER temperature 0.63
+PARAMETER top_k 20
+PARAMETER top_p 0.8
+PARAMETER repeat_penalty 1.05

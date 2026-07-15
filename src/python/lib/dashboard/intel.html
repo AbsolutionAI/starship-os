@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intelligence Hub — Agnetic Starship OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --color-bg:#070B14;
+  --color-surface:rgba(14,22,40,0.72);
+  --color-glass:rgba(14,22,40,0.55);
+  --color-glass-edge:rgba(60,80,120,0.15);
+  --color-primary:#7BC8E4;
+  --color-accent:#C4A97D;
+  --color-text:#E4DDD0;
+  --color-text-dim:#8A9BB0;
+  --color-text-muted:#5A6A80;
+  --color-success:#7BC8A4;
+  --color-warning:#D4A060;
+  --color-alert:#D46060;
+  --color-flash:#FF4444;
+  --color-priority:#FF8844;
+  --color-routine:#7BC8A4;
+  --radius:12px;
+  --radius-sm:8px;
+}
+html{font-size:14px}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--color-bg);
+  color:var(--color-text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+code,pre,.mono,.val{font-family:'JetBrains Mono',monospace}
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;
+  background:
+    radial-gradient(ellipse at 20% 50%,rgba(30,60,114,0.15),transparent 60%),
+    radial-gradient(ellipse at 80% 20%,rgba(100,60,30,0.08),transparent 50%);
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--color-glass-edge);border-radius:3px}
+
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 24px;border-bottom:1px solid var(--color-glass-edge);
+  background:var(--color-glass);backdrop-filter:blur(20px);
+  position:sticky;top:0;z-index:100;
+}
+.header h1{font-size:1.1rem;font-weight:600;letter-spacing:0.5px}
+.header h1 span{color:var(--color-primary)}
+.header-status{display:flex;gap:16px;align-items:center;font-size:0.8rem;color:var(--color-text-dim)}
+.header-status .live{color:var(--color-success);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+.threat-banner{
+  padding:12px 24px;text-align:center;font-weight:600;font-size:0.9rem;
+  letter-spacing:1px;text-transform:uppercase;transition:all 0.3s;
+}
+.threat-green{background:rgba(123,200,164,0.15);color:var(--color-success)}
+.threat-yellow{background:rgba(212,160,96,0.15);color:var(--color-warning)}
+.threat-orange{background:rgba(255,136,68,0.15);color:var(--color-priority)}
+.threat-red{background:rgba(255,68,68,0.15);color:var(--color-flash);animation:threat-pulse 1s infinite}
+@keyframes threat-pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+
+.main{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 24px;max-width:1600px;margin:0 auto}
+@media(max-width:1024px){.main{grid-template-columns:1fr}}
+
+.panel{
+  background:var(--color-surface);border:1px solid var(--color-glass-edge);
+  border-radius:var(--radius);padding:16px;backdrop-filter:blur(10px);
+}
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--color-glass-edge);
+}
+.panel-title{font-size:0.85rem;font-weight:600;color:var(--color-primary);text-transform:uppercase;letter-spacing:1px}
+.panel-count{font-size:0.75rem;color:var(--color-text-muted);font-family:'JetBrains Mono',monospace}
+
+.full-width{grid-column:1/-1}
+
+/* Source grid */
+.source-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.source-card{
+  background:var(--color-glass);border:1px solid var(--color-glass-edge);
+  border-radius:var(--radius-sm);padding:10px;transition:all 0.2s;
+}
+.source-card:hover{border-color:var(--color-primary);transform:translateY(-1px)}
+.source-name{font-size:0.8rem;font-weight:600;margin-bottom:4px}
+.source-type{font-size:0.7rem;color:var(--color-text-muted);text-transform:uppercase}
+.source-status{font-size:0.75rem;margin-top:4px}
+.source-ok{color:var(--color-success)}
+.source-error{color:var(--color-alert)}
+.source-count{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--color-text-dim)}
+
+/* Feed items */
+.feed-list{max-height:500px;overflow-y:auto}
+.feed-item{
+  padding:10px;margin-bottom:6px;border-radius:var(--radius-sm);
+  background:var(--color-glass);border-left:3px solid var(--color-glass-edge);
+  transition:all 0.2s;cursor:pointer;
+}
+.feed-item:hover{background:rgba(20,30,50,0.8);border-left-color:var(--color-primary)}
+.feed-item.flash{border-left-color:var(--color-flash)}
+.feed-item.priority{border-left-color:var(--color-priority)}
+.feed-item.routine{border-left-color:var(--color-routine)}
+.feed-item.noise{border-left-color:var(--color-text-muted)}
+.feed-title{font-size:0.82rem;font-weight:500;margin-bottom:4px;line-height:1.3}
+.feed-meta{font-size:0.7rem;color:var(--color-text-muted);display:flex;gap:8px;flex-wrap:wrap}
+.feed-source{color:var(--color-primary)}
+.feed-region{color:var(--color-accent)}
+.severity-badge{
+  display:inline-block;padding:1px 6px;border-radius:4px;
+  font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;
+}
+.sev-flash{background:rgba(255,68,68,0.2);color:var(--color-flash)}
+.sev-priority{background:rgba(255,136,68,0.2);color:var(--color-priority)}
+.sev-routine{background:rgba(123,200,164,0.2);color:var(--color-routine)}
+.sev-noise{background:rgba(90,106,128,0.2);color:var(--color-text-muted)}
+
+/* Signals */
+.signal-card{
+  padding:10px;margin-bottom:8px;border-radius:var(--radius-sm);
+  background:var(--color-glass);border:1px solid var(--color-glass-edge);
+}
+.signal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.signal-region{font-weight:600;color:var(--color-accent)}
+.signal-score{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--color-primary)}
+.signal-sources{font-size:0.7rem;color:var(--color-text-dim)}
+.signal-items{font-size:0.75rem;color:var(--color-text);margin-top:4px}
+
+/* Delta panel */
+.delta-item{
+  padding:8px;margin-bottom:4px;border-radius:var(--radius-sm);
+  font-size:0.78rem;display:flex;align-items:center;gap:8px;
+}
+.delta-new{background:rgba(123,200,200,0.1);color:var(--color-primary)}
+.delta-escalated{background:rgba(255,136,68,0.1);color:var(--color-priority)}
+.delta-resolved{background:rgba(123,200,164,0.1);color:var(--color-success)}
+.delta-icon{font-size:1rem;width:24px;text-align:center}
+
+/* Brief panel */
+.brief-text{
+  font-size:0.82rem;line-height:1.6;color:var(--color-text);
+  white-space:pre-wrap;font-family:'JetBrains Mono',monospace;
+  max-height:400px;overflow-y:auto;
+}
+
+/* Endpoint agents */
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.agent-card{
+  background:var(--color-glass);border:1px solid var(--color-glass-edge);
+  border-radius:var(--radius-sm);padding:12px;
+}
+.agent-name{font-weight:600;margin-bottom:4px}
+.agent-host{font-size:0.7rem;color:var(--color-text-muted);margin-bottom:8px}
+.agent-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.agent-metric{text-align:center}
+.agent-metric-val{font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:600}
+.agent-metric-label{font-size:0.6rem;color:var(--color-text-muted);text-transform:uppercase}
+.metric-good{color:var(--color-success)}
+.metric-warn{color:var(--color-warning)}
+.metric-bad{color:var(--color-alert)}
+
+/* Severity bar */
+.sev-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:8px}
+.sev-bar-seg{transition:width 0.5s}
+
+/* Controls */
+.controls{display:flex;gap:8px;margin-bottom:12px}
+.btn{
+  padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--color-glass-edge);
+  background:var(--color-glass);color:var(--color-text);font-size:0.75rem;
+  cursor:pointer;transition:all 0.2s;font-family:inherit;
+}
+.btn:hover{border-color:var(--color-primary);background:rgba(123,200,200,0.1)}
+.btn.active{border-color:var(--color-primary);background:rgba(123,200,200,0.15)}
+
+.empty-state{text-align:center;padding:40px;color:var(--color-text-muted);font-size:0.85rem}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>★</span> INTELLIGENCE HUB</h1>
+  <div class="header-status">
+    <span class="live" id="live-indicator">● LIVE</span>
+    <span id="sweep-time">Last sweep: --</span>
+    <span id="item-count">0 items</span>
+    <span id="source-count">0 sources</span>
+  </div>
+</div>
+
+<div class="threat-banner threat-green" id="threat-banner">
+  THREAT LEVEL: GREEN — ALL CLEAR
+</div>
+
+<div class="main">
+  <!-- Sources -->
+  <div class="panel full-width">
+    <div class="panel-header">
+      <span class="panel-title">Sensor Array</span>
+      <div class="controls">
+        <button class="btn" onclick="runSweep()">Sweep Now</button>
+        <button class="btn" onclick="generateBrief()">Generate Brief</button>
+      </div>
+    </div>
+    <div class="source-grid" id="source-grid"></div>
+  </div>
+
+  <!-- Live Feed -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Live Intelligence Feed</span>
+      <span class="panel-count" id="feed-count">0</span>
+    </div>
+    <div class="feed-list" id="feed-list">
+      <div class="empty-state">No intelligence data yet. Click "Sweep Now" to start.</div>
+    </div>
+  </div>
+
+  <!-- Deltas -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Change Detection</span>
+      <span class="panel-count" id="delta-count">0</span>
+    </div>
+    <div id="delta-list">
+      <div class="empty-state">No changes detected.</div>
+    </div>
+  </div>
+
+  <!-- Cross-Source Signals -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Cross-Source Signals</span>
+      <span class="panel-count" id="signal-count">0</span>
+    </div>
+    <div id="signal-list">
+      <div class="empty-state">No cross-source correlations.</div>
+    </div>
+  </div>
+
+  <!-- Intelligence Brief -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Intelligence Brief</span>
+      <button class="btn" onclick="generateBrief()">Refresh</button>
+    </div>
+    <div class="brief-text" id="brief-text">No brief generated.</div>
+  </div>
+
+  <!-- Endpoint Agents -->
+  <div class="panel full-width">
+    <div class="panel-header">
+      <span class="panel-title">Endpoint Agents</span>
+      <span class="panel-count" id="agent-count">0</span>
+    </div>
+    <div class="agent-grid" id="agent-grid">
+      <div class="empty-state">No endpoint agents connected.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = '';
+let evtSource = null;
+let sweepData = null;
+
+// --- SSE connection ---
+function connectSSE() {
+  // Polling mode — no SSE needed
+  document.getElementById('live-indicator').textContent = '● POLLING';
+  document.getElementById('live-indicator').style.color = '#7BC8A4';
+}
+
+// --- API calls ---
+async function fetchJSON(url) {
+  try {
+    const r = await fetch(API_BASE + url);
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+async function loadStatus() {
+  const data = await fetchJSON('/api/intel/status');
+  if (!data) return;
+
+  document.getElementById('sweep-time').textContent = `Sweeps: ${data.sweeps_completed || 0}`;
+  document.getElementById('item-count').textContent = `${data.latest_items || 0} items`;
+  document.getElementById('source-count').textContent = `${data.total_sources || 0} sources`;
+
+  // Render sources
+  const grid = document.getElementById('source-grid');
+  const sources = data.sources || {};
+  if (Object.keys(sources).length === 0) {
+    grid.innerHTML = '<div class="empty-state">No source data.</div>';
+    return;
+  }
+  grid.innerHTML = Object.entries(sources).map(([name, s]) => {
+    const ok = s.last_sweep && !s.last_error;
+    return `<div class="source-card">
+      <div class="source-name">${name}</div>
+      <div class="source-type">${s.source_type}</div>
+      <div class="source-status ${ok ? 'source-ok' : 'source-error'}">${ok ? '● Active' : '● Error'}</div>
+      <div class="source-count">${s.items_collected} items</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadFeed() {
+  const data = await fetchJSON('/api/intel/feed');
+  if (!data || !data.items) return;
+
+  const list = document.getElementById('feed-list');
+  document.getElementById('feed-count').textContent = data.items.length;
+
+  if (data.items.length === 0) {
+    list.innerHTML = '<div class="empty-state">No intelligence data yet.</div>';
+    return;
+  }
+
+  list.innerHTML = data.items.map(item => {
+    const sevClass = `sev-${item.severity}`;
+    return `<div class="feed-item ${item.severity}">
+      <div class="feed-title">${escHtml(item.title)}</div>
+      <div class="feed-meta">
+        <span class="feed-source">${escHtml(item.source)}</span>
+        <span class="severity-badge ${sevClass}">${item.severity}</span>
+        ${item.region ? `<span class="feed-region">${escHtml(item.region)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadDeltas() {
+  const data = await fetchJSON('/api/intel/deltas');
+  if (!data || !data.deltas) return;
+
+  const list = document.getElementById('delta-list');
+  document.getElementById('delta-count').textContent = data.deltas.length;
+
+  if (data.deltas.length === 0) {
+    list.innerHTML = '<div class="empty-state">No changes detected.</div>';
+    return;
+  }
+
+  const icons = {new: '🆕', escalated: '⬆️', resolved: '⬇️', updated: '📝'};
+  list.innerHTML = data.deltas.map(d => {
+    return `<div class="delta-item delta-${d.change_type}">
+      <span class="delta-icon">${icons[d.change_type] || '?'}</span>
+      <span>${escHtml(d.title?.substring(0, 60) || '')}</span>
+      <span style="color:var(--color-text-muted);font-size:0.7rem;margin-left:auto">${d.source}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadSignals() {
+  const data = await fetchJSON('/api/intel/signals');
+  if (!data || !data.signals) return;
+
+  const list = document.getElementById('signal-list');
+  document.getElementById('signal-count').textContent = data.signals.length;
+
+  if (data.signals.length === 0) {
+    list.innerHTML = '<div class="empty-state">No cross-source correlations.</div>';
+    return;
+  }
+
+  list.innerHTML = data.signals.map(s => {
+    return `<div class="signal-card">
+      <div class="signal-header">
+        <span class="signal-region">${escHtml(s.region)}</span>
+        <span class="signal-score">Score: ${(s.correlation_score * 100).toFixed(0)}%</span>
+      </div>
+      <div class="signal-sources">${s.sources?.join(', ')} — ${s.item_count} items</div>
+      <div class="signal-items">${escHtml(s.headline?.substring(0, 100) || '')}</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadBrief() {
+  const data = await fetchJSON('/api/intel/brief');
+  if (!data || !data.brief) return;
+  document.getElementById('brief-text').textContent = data.brief;
+  // Update threat level from brief
+  updateThreatLevel(data.brief);
+}
+
+async function loadAgents() {
+  const data = await fetchJSON('/api/agents');
+  if (!data || !data.agents) return;
+
+  const grid = document.getElementById('agent-grid');
+  document.getElementById('agent-count').textContent = Object.keys(data.agents).length;
+
+  if (Object.keys(data.agents).length === 0) {
+    grid.innerHTML = '<div class="empty-state">No agents connected.</div>';
+    return;
+  }
+
+  grid.innerHTML = Object.entries(data.agents).map(([name, a]) => {
+    return `<div class="agent-card">
+      <div class="agent-name">${escHtml(name)}</div>
+      <div class="agent-host">${escHtml(a.model || 'unknown')}</div>
+      <div class="agent-metrics">
+        <div class="agent-metric">
+          <div class="agent-metric-val">${a.status || 'offline'}</div>
+          <div class="agent-metric-label">Status</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// --- Actions ---
+async function runSweep() {
+  document.getElementById('feed-list').innerHTML = '<div class="empty-state">Running sweep...</div>';
+  const data = await fetchJSON('/api/intel/sweep');
+  if (data) {
+    await refreshAll();
+  }
+}
+
+async function generateBrief() {
+  document.getElementById('brief-text').textContent = 'Generating brief...';
+  const data = await fetchJSON('/api/intel/brief');
+  if (data && data.brief) {
+    document.getElementById('brief-text').textContent = data.brief;
+    updateThreatLevel(data.brief);
+  }
+}
+
+function handleSweepUpdate(data) {
+  document.getElementById('sweep-time').textContent = `Last sweep: ${new Date().toLocaleTimeString()}`;
+  document.getElementById('item-count').textContent = `${data.items || 0} items`;
+  refreshAll();
+}
+
+function updateThreatLevel(briefText) {
+  const banner = document.getElementById('threat-banner');
+  const text = briefText.toUpperCase();
+  if (text.includes('RED')) {
+    banner.className = 'threat-banner threat-red';
+    banner.textContent = 'THREAT LEVEL: RED — CRITICAL';
+  } else if (text.includes('ORANGE')) {
+    banner.className = 'threat-banner threat-orange';
+    banner.textContent = 'THREAT LEVEL: ORANGE — ELEVATED';
+  } else if (text.includes('YELLOW')) {
+    banner.className = 'threat-banner threat-yellow';
+    banner.textContent = 'THREAT LEVEL: YELLOW — ADVISORY';
+  } else {
+    banner.className = 'threat-banner threat-green';
+    banner.textContent = 'THREAT LEVEL: GREEN — ALL CLEAR';
+  }
+}
+
+function escHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+async function refreshAll() {
+  await Promise.all([loadStatus(), loadFeed(), loadDeltas(), loadSignals(), loadAgents()]);
+}
+
+// --- Init ---
+connectSSE();
+refreshAll();
+setInterval(refreshAll, 30000);
+setInterval(loadFeed, 15000);
+</script>
+</body>
+</html>

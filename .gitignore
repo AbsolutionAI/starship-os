@@ -1,0 +1,60 @@
+# Build artifacts
+target/
+*.o
+*.so
+*.dylib
+agneticctl/agneticctl
+agent/target/
+debian/installed/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# Runtime files
+*.pid
+*.sock
+/tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Secrets - NEVER commit
+*.key
+*.pem
+.env
+.env.*
+credentials/
+credentials.json
+**/credentials.json
+*.token
+.gh_token
+ghp_*
+
+# Local model blobs / large artifacts
+*.gguf
+models/blobs/
+.ollama/
+
+# WSL / local overrides
+/opt/
+*.local.yaml
+
+# NATS
+nats/nats-server.pid
+nats/nats-server.log

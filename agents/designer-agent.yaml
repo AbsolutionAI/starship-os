@@ -1,0 +1,37 @@
+name: designer-agent
+role: design_specialist
+model: qwen2.5:3b
+provider: ollama
+models:
+  default: qwen2.5:3b
+  available:
+    - qwen2.5:7b
+    - qwen2.5:3b
+  providers:
+    openrouter:
+      - openai/gpt-4o-mini
+      - google/gemini-2.0-flash-001
+  switch_logic: "design|prototype -> qwen2.5:7b or cloud; quick mockup -> qwen2.5:3b"
+
+capabilities:
+  - web_prototyping
+  - ui_design
+  - dashboard_design
+  - slide_decks
+  - mobile_mockups
+  - design_system_application
+
+toolsets:
+  - terminal
+  - file_operations
+  - design
+  - coding
+  - delegation
+  - planning
+  - nats
+
+nats:
+  subjects:
+    command: "agnetic.agent.designer-agent.command.>"
+    event: "agnetic.agent.designer-agent.event.>"
+    status: "agnetic.agent.designer-agent.status"

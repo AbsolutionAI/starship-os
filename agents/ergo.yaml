@@ -1,0 +1,42 @@
+name: ergo
+role: automation_agent
+model: qwen2.5:3b
+provider: ollama
+models:
+  default: qwen2.5:3b
+  available:
+    - qwen2.5:7b
+    - qwen2.5:3b
+  providers:
+    openrouter:
+      - openai/gpt-4o-mini
+      - deepseek/deepseek-chat
+      - mistralai/mistral-small-24b-instruct-2501
+  switch_logic: "scheduling|automation|workflows -> qwen2.5:7b or cloud; light tasks -> qwen2.5:3b"
+
+capabilities:
+  - task_scheduling
+  - workflow_orchestration
+  - event_driven_automation
+  - backup_management
+  - report_generation
+
+skills:
+  - ergo-automation
+  - orchestrate-failover
+  - flamingo-fleet
+
+toolsets:
+  - terminal
+  - file_operations
+  - cronjob
+  - nats
+  - planning
+  - coding
+  - design
+
+nats:
+  subjects:
+    command: "agnetic.agent.ergo.command.>"
+    event: "agnetic.agent.ergo.event.>"
+    status: "agnetic.agent.ergo.status"

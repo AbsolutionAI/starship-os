@@ -1,0 +1,50 @@
+{
+  "id": "security-breach",
+  "name": "security-breach",
+  "alert_pattern": "security|breach|intrusion|unauthorized|hack",
+  "description": "Immediate response to security breaches: isolate, audit, and escalate.",
+  "steps": [
+    {
+      "order": 1,
+      "action": "Isolate system",
+      "command": "echo 'Isolating system from network'",
+      "expected_outcome": "System isolation initiated",
+      "timeout_seconds": 30,
+      "critical": true
+    },
+    {
+      "order": 2,
+      "action": "Check auth logs",
+      "command": "tail -100 /var/log/auth.log 2>/dev/null || journalctl -u sshd -n 100 --no-pager 2>/dev/null",
+      "expected_outcome": "Authentication logs reviewed",
+      "timeout_seconds": 60,
+      "critical": false
+    },
+    {
+      "order": 3,
+      "action": "List active connections",
+      "command": "ss -tunap",
+      "expected_outcome": "Active network connections listed",
+      "timeout_seconds": 30,
+      "critical": false
+    },
+    {
+      "order": 4,
+      "action": "Check file integrity",
+      "command": "which tripwire && tripwire --check || echo 'No integrity checker installed'",
+      "expected_outcome": "File integrity check initiated",
+      "timeout_seconds": 120,
+      "critical": false
+    },
+    {
+      "order": 5,
+      "action": "Escalate immediately",
+      "command": "echo 'SECURITY BREACH \u2014 escalation required'",
+      "expected_outcome": "Escalation triggered",
+      "timeout_seconds": 10,
+      "critical": true
+    }
+  ],
+  "escalation_message": "SECURITY BREACH DETECTED \u2014 immediate human intervention required",
+  "created_at": "2026-07-15T05:47:00.440032+00:00"
+}

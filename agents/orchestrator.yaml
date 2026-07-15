@@ -1,0 +1,41 @@
+name: orchestrator
+role: central_coordinator
+model: qwen2.5:7b
+provider: ollama
+models:
+  default: qwen2.5:7b
+  available:
+    - qwen2.5:7b
+    - qwen2.5:3b
+  providers:
+    openrouter:
+      - openai/gpt-4o-mini
+      - anthropic/claude-3.5-haiku
+      - deepseek/deepseek-chat
+  switch_logic: "routing|priority|escalation -> qwen2.5:7b or cloud fallback via openrouter; quick -> qwen2.5:3b"
+
+capabilities:
+  - task_routing
+  - escalation
+  - priority_management
+  - inter_agent_communication
+
+subsystems:
+  - system_health
+  - knowledge_store
+  - security
+  - automation
+  - navigation
+
+nats:
+  subjects:
+    command: "agnetic.agent.orchestrator.command.>"
+    event: "agnetic.agent.orchestrator.event.>"
+    status: "agnetic.agent.orchestrator.status"
+
+toolsets:
+  - terminal
+  - file_operations
+  - web_search
+  - coding
+  - design

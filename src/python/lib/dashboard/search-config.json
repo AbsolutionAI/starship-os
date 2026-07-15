@@ -1,0 +1,14 @@
+{
+  "apps": [
+    {"name": "Ollama", "url": "http://localhost:11435", "description": "LLM Server & Model Management"},
+    {"name": "NATS Monitoring", "url": "http://localhost:8222", "description": "Message Broker Dashboard"},
+    {"name": "Starship Dashboard", "url": "http://localhost:8899", "description": "Starship OS Web UI"}
+  ],
+  "bookmarks": [
+    {"name": "GitHub", "url": "https://github.com", "description": "Source control & collaboration"},
+    {"name": "OpenRouter", "url": "https://openrouter.ai", "description": "Cloud LLM provider & model routing"},
+    {"name": "Ollama Library", "url": "https://ollama.com/library", "description": "Ollama model repository"},
+    {"name": "NATS Docs", "url": "https://docs.nats.io", "description": "NATS messaging documentation"},
+    {"name": "Hugging Face", "url": "https://huggingface.co", "description": "AI model hub & datasets"}
+  ]
+}

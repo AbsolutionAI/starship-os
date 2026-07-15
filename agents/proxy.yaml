@@ -1,0 +1,43 @@
+name: proxy
+role: tech_agent
+model: qwen2.5:7b
+provider: ollama
+models:
+  default: qwen2.5:7b
+  available:
+    - qwen2.5:7b
+    - qwen2.5:3b
+  providers:
+    openrouter:
+      - openai/gpt-4o-mini
+      - mistralai/mistral-small-24b-instruct-2501
+      - meta-llama/llama-3.3-70b-instruct
+  switch_logic: "code|debug|diagnose -> qwen2.5:7b or cloud; fast|status -> qwen2.5:3b"
+
+capabilities:
+  - system_diagnostics
+  - log_analysis
+  - troubleshooting
+  - resource_monitoring
+  - process_management
+
+skills:
+  - system-health
+  - proxy-diagnostics
+  - osint-threat
+  - governance
+
+toolsets:
+  - terminal
+  - file_operations
+  - web_search
+  - nats
+  - planning
+  - coding
+  - design
+
+nats:
+  subjects:
+    command: "agnetic.agent.proxy.command.>"
+    event: "agnetic.agent.proxy.event.>"
+    status: "agnetic.agent.proxy.status"

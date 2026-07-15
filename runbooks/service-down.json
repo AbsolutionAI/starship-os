@@ -1,0 +1,42 @@
+{
+  "id": "service-down",
+  "name": "service-down",
+  "alert_pattern": "service.*(down|stop|fail|crash|unreachable)",
+  "description": "Respond to service-down alerts by checking status, logs, restarting, and verifying health.",
+  "steps": [
+    {
+      "order": 1,
+      "action": "Check service status",
+      "command": "systemctl status --no-pager 2>/dev/null || echo 'systemctl not available'",
+      "expected_outcome": "Service status displayed",
+      "timeout_seconds": 30,
+      "critical": false
+    },
+    {
+      "order": 2,
+      "action": "Check service logs",
+      "command": "journalctl -n 50 --no-pager 2>/dev/null || tail -50 /var/log/syslog 2>/dev/null",
+      "expected_outcome": "Recent logs displayed",
+      "timeout_seconds": 30,
+      "critical": false
+    },
+    {
+      "order": 3,
+      "action": "Restart service",
+      "command": "systemctl restart 2>/dev/null || service restart 2>/dev/null",
+      "expected_outcome": "Service restart attempted",
+      "timeout_seconds": 60,
+      "critical": false
+    },
+    {
+      "order": 4,
+      "action": "Verify health",
+      "command": "systemctl is-active 2>/dev/null || echo 'check manually'",
+      "expected_outcome": "Service health verified",
+      "timeout_seconds": 30,
+      "critical": true
+    }
+  ],
+  "escalation_message": "Service failed to restart \u2014 manual intervention required",
+  "created_at": "2026-07-15T05:47:00.439893+00:00"
+}

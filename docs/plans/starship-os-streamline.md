@@ -1,0 +1,60 @@
+# Starship OS — Streamline, Standardize, Bare-Metal Plan (Alpha 2.1)
+
+**Status:** Phase 0 in progress  
+**Canonical repo:** https://github.com/andromi-hash/starship-os  
+**Legacy Alpha 2.0:** https://github.com/andromi-hash/agnetic-os (archived source)
+
+## Version lineage
+
+| Stage | Repo / tree | Version |
+|-------|-------------|---------|
+| Alpha | starship-os (scaffold) | 0.x |
+| Alpha 2.0 | agnetic-os | 0.2.0 packaging mesh |
+| Alpha 2.1 | starship-os (this tree) | **2.1.0-alpha.1** |
+
+## Product decisions (locked)
+
+- Product name: **Starship OS**
+- Canonical GitHub: **andromi-hash/starship-os**
+- Ubuntu 24.04 LTS base (no custom kernel)
+- Default reasoning model: **Eve-V2-Unleashed** (`num_ctx=16384` server default)
+- OpenCode + **oh-my-opencode-slim** shipped with OS
+- Document + reorganize first; C11 agent stack after feasibility ADR
+- ISO profiles: `starship-server` / `starship-ops` / `starship-edge`
+- UI: headless server + web C2 + TUI primary; optional GNOME Ops Console
+
+## Phase 0 goals (current)
+
+1. Reconcile agnetic-os packaging + WSL 2.1 services into starship-os
+2. Docs: plans, architecture, module catalog stubs
+3. models.yaml + Eve-V2-Unleashed Modelfile
+4. Secret scrub + .gitignore
+5. Tag 2.1.0-alpha.1 and push
+
+## Phase 1+ (next)
+
+- Streamline multi-hw install, systemd, `/etc/starship`, `starshipctl`
+- C11 feasibility ADR + sandbox spike
+- ISO autoinstall
+- Fleet / ops manager / plant / red-blue
+- OpenCode + oh-my-opencode-slim local preset
+
+## Language map
+
+| Layer | Language |
+|-------|----------|
+| Agent runtime / sandbox / healer (target) | C11 |
+| Vector hot paths | C/C++ |
+| Skills / orchestration / OpenCode bridge | Python / config |
+| starshipctl | Go |
+| StarAgent telemetry | Rust |
+| Dashboard | Python + vanilla JS |
+| OS base | Ubuntu 24.04 LTS |
+
+## Related docs
+
+- `docs/SYSTEM_GUIDE.md` — runtime architecture (2.1 services)
+- `docs/AGENTS.md` — agent context for tooling
+- `docs/PERFORMANCE_PLAN.md` — C++ performance roadmap
+- `docs/plans/alpha-2.1-addendum.md` — OpenCode + models + GitHub
+- `config/models.yaml` — model registry

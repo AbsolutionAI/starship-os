@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agnetic Starship OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --color-bg:#070B14;
+  --color-surface:rgba(14,22,40,0.72);
+  --color-glass:rgba(14,22,40,0.55);
+  --color-glass-edge:rgba(60,80,120,0.15);
+  --color-primary:#7BC8E4;
+  --color-accent:#C4A97D;
+  --color-text:#E4DDD0;
+  --color-text-dim:#8A9BB0;
+  --color-text-muted:#5A6A80;
+  --color-success:#7BC8A4;
+  --color-warning:#D4A060;
+  --color-alert:#D46060;
+  --radius:12px;
+  --radius-sm:8px;
+}
+html{font-size:14px}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--color-bg);
+  color:var(--color-text);
+  min-height:100vh;
+  overflow-x:hidden;
+  display:flex;flex-direction:column;
+}
+code,pre,.mono,.val,.gauge-val,.agent-model,.log-line,.gpu-val{font-family:'JetBrains Mono',monospace}
+
+/* Starfield background */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;
+  background:
+    radial-gradient(ellipse at 20% 50%,rgba(30,60,114,0.15),transparent 60%),
+    radial-gradient(ellipse at 80% 20%,rgba(100,60,30,0.08),transparent 50%),
+    radial-gradient(ellipse at 50% 80%,rgba(20,80,60,0.06),transparent 50%);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--color-glass-edge);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--color-text-muted)}
+
+/* Glass panel */
+.glass{
+  background:var(--color-surface);
+  border:1px solid var(--color-glass-edge);
+  border-radius:var(--radius);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+}
+.glass-sub{
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+  border-radius:var(--radius-sm);
+}
+
+/* Top status bar */
+#status-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 20px;
+  background:var(--color-surface);
+  border-bottom:1px solid var(--color-glass-edge);
+  backdrop-filter:blur(20px);
+  position:sticky;top:0;z-index:100;
+  flex-shrink:0;
+}
+#status-bar .left,#status-bar .right{display:flex;align-items:center;gap:12px}
+.ship-name{font-weight:600;font-size:1.1rem;color:var(--color-primary);letter-spacing:0.5px}
+.health-dot{width:10px;height:10px;border-radius:50%;background:var(--color-success);display:inline-block;box-shadow:0 0 8px var(--color-success)}
+.health-dot.alert{background:var(--color-alert);box-shadow:0 0 8px var(--color-alert)}
+.clock{font-family:'JetBrains Mono',monospace;color:var(--color-text-dim);font-size:0.9rem}
+.status-label{font-size:0.75rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:1px}
+
+/* Bridge layout */
+#bridge{
+  display:grid;
+  grid-template-columns:280px 1fr 320px;
+  gap:12px;
+  padding:12px;
+  flex:1;
+  min-height:0;
+  overflow:hidden;
+}
+.panel{
+  display:flex;flex-direction:column;
+  gap:10px;
+  min-height:0;
+  overflow:hidden;
+}
+.panel-center{min-width:0}
+
+/* Panel headers */
+.panel-title{
+  font-size:0.7rem;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+  color:var(--color-text-muted);
+  padding:8px 12px 4px;
+  font-weight:600;
+  flex-shrink:0;
+}
+.panel-scroll{
+  flex:1;overflow-y:auto;padding:4px 8px 8px;
+}
+
+/* Agents */
+.agent-list{display:flex;flex-direction:column;gap:4px}
+.agent-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  transition:background 0.2s;
+  border:1px solid transparent;
+}
+.agent-item:hover{background:rgba(123,200,228,0.06)}
+.agent-item.selected{background:rgba(123,200,228,0.1);border-color:rgba(123,200,228,0.2)}
+.agent-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.agent-dot.online{background:var(--color-success);box-shadow:0 0 6px var(--color-success)}
+.agent-dot.offline{background:var(--color-alert);box-shadow:0 0 6px var(--color-alert)}
+.agent-info{flex:1;min-width:0}
+.agent-name{font-size:0.85rem;font-weight:500;color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent-meta{font-size:0.7rem;color:var(--color-text-muted);display:flex;gap:8px;margin-top:2px}
+.agent-model{color:var(--color-accent)}
+.agent-status{font-size:0.65rem;color:var(--color-success)}
+.agent-status.idle{color:var(--color-text-muted)}
+
+/* Logs */
+.log-controls{display:flex;gap:6px;padding:4px 0 6px;flex-shrink:0}
+.log-controls select{
+  flex:1;
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+  color:var(--color-text);
+  padding:5px 8px;
+  border-radius:var(--radius-sm);
+  font-size:0.75rem;
+  font-family:inherit;
+}
+.log-controls select option{background:#0E1628;color:var(--color-text)}
+.log-viewer{
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+  border-radius:var(--radius-sm);
+  padding:8px;
+  height:180px;
+  overflow-y:auto;
+}
+.log-line{
+  font-size:0.7rem;
+  color:var(--color-text-dim);
+  line-height:1.6;
+  white-space:pre-wrap;
+  word-break:break-all;
+}
+.log-line .log-ts{color:var(--color-text-muted);margin-right:6px}
+.log-line .log-level{font-weight:600;margin-right:6px}
+.log-line .log-level.info{color:var(--color-primary)}
+.log-line .log-level.warn{color:var(--color-warning)}
+.log-line .log-level.error{color:var(--color-alert)}
+.log-line .log-level.debug{color:var(--color-text-muted)}
+
+/* Center chat */
+.chat-wrap{
+  display:flex;flex-direction:column;
+  flex:1;min-height:0;
+  border:1px solid var(--color-glass-edge);
+  border-radius:var(--radius);
+  background:var(--color-surface);
+  backdrop-filter:blur(24px);
+  overflow:hidden;
+}
+.chat-header{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;
+  border-bottom:1px solid var(--color-glass-edge);
+  flex-shrink:0;
+}
+.chat-header select{
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+  color:var(--color-text);
+  padding:5px 10px;
+  border-radius:var(--radius-sm);
+  font-size:0.8rem;
+  font-family:inherit;
+}
+.chat-header select option{background:#0E1628}
+.chat-messages{
+  flex:1;overflow-y:auto;
+  padding:12px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.msg{
+  padding:10px 14px;
+  border-radius:var(--radius-sm);
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+  border-left:3px solid var(--color-text-muted);
+  animation:msgIn 0.3s ease;
+  max-width:90%;
+}
+.msg.user{border-left-color:var(--color-primary);align-self:flex-end;background:rgba(123,200,228,0.08)}
+.msg.agent-msg{align-self:flex-start}
+.msg.agent-msg[data-agent="proxy"]{border-left-color:#8A9BB0}
+.msg.agent-msg[data-agent="romi"]{border-left-color:#5B8DEF}
+.msg.agent-msg[data-agent="ergo"]{border-left-color:var(--color-accent)}
+.msg-sender{font-size:0.7rem;color:var(--color-text-muted);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.msg-text{font-size:0.85rem;line-height:1.5;color:var(--color-text);white-space:pre-wrap;word-break:break-word}
+.msg-time{font-size:0.65rem;color:var(--color-text-muted);margin-top:4px;text-align:right}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Quick actions */
+.quick-actions{
+  display:flex;flex-wrap:wrap;gap:6px;
+  padding:8px 12px;
+  border-top:1px solid var(--color-glass-edge);
+  flex-shrink:0;
+}
+.quick-btn{
+  padding:5px 10px;
+  border-radius:20px;
+  border:1px solid var(--color-glass-edge);
+  background:var(--color-glass);
+  color:var(--color-text-dim);
+  font-size:0.7rem;
+  font-family:inherit;
+  cursor:pointer;
+  transition:all 0.2s;
+  white-space:nowrap;
+}
+.quick-btn:hover{background:rgba(123,200,228,0.12);color:var(--color-primary);border-color:rgba(123,200,228,0.3)}
+
+/* Chat input */
+.chat-input-wrap{
+  display:flex;gap:8px;
+  padding:10px 12px;
+  border-top:1px solid var(--color-glass-edge);
+  flex-shrink:0;
+}
+.chat-input{
+  flex:1;
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+  color:var(--color-text);
+  padding:8px 12px;
+  border-radius:var(--radius-sm);
+  font-size:0.85rem;
+  font-family:inherit;
+  outline:none;
+  transition:border-color 0.2s;
+}
+.chat-input:focus{border-color:var(--color-primary)}
+.chat-input::placeholder{color:var(--color-text-muted)}
+.send-btn{
+  padding:8px 18px;
+  border-radius:var(--radius-sm);
+  border:1px solid rgba(123,200,228,0.3);
+  background:rgba(123,200,228,0.12);
+  color:var(--color-primary);
+  font-size:0.85rem;
+  font-weight:600;
+  font-family:inherit;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.send-btn:hover{background:rgba(123,200,228,0.22)}
+
+/* Right panel sections */
+.right-section{
+  padding:4px 8px 8px;
+}
+.right-section .panel-title{padding:4px 4px 6px}
+
+/* Ring gauges */
+.gauges{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.gauge{
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 6px;
+}
+.gauge-ring{position:relative;width:72px;height:72px}
+.gauge-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge-ring circle{fill:none;stroke-linecap:round}
+.gauge-ring .gauge-bg{stroke:var(--color-glass-edge);stroke-width:5}
+.gauge-ring .gauge-fg{stroke-width:5;transition:stroke-dashoffset 0.8s ease,stroke 0.5s}
+.gauge-val{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.85rem;font-weight:600;color:var(--color-text);
+}
+.gauge-label{
+  font-size:0.65rem;color:var(--color-text-muted);
+  text-transform:uppercase;letter-spacing:1px;
+  margin-top:6px;
+}
+
+/* GPU cells */
+.gpu-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;
+}
+.gpu-cell{
+  padding:8px 10px;
+  border-radius:var(--radius-sm);
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+}
+.gpu-cell-label{font-size:0.6rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
+.gpu-val{font-size:0.8rem;color:var(--color-text);word-break:break-all}
+
+/* Ollama models */
+.model-list{display:flex;flex-direction:column;gap:4px}
+.model-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;
+  border-radius:var(--radius-sm);
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+}
+.model-name{font-size:0.8rem;color:var(--color-text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.model-size{font-size:0.7rem;color:var(--color-text-muted);margin:0 8px;flex-shrink:0}
+.model-del{
+  padding:2px 8px;
+  border-radius:4px;
+  border:1px solid rgba(212,96,96,0.3);
+  background:rgba(212,96,96,0.1);
+  color:var(--color-alert);
+  font-size:0.65rem;
+  font-family:inherit;
+  cursor:pointer;
+  transition:all 0.2s;
+  flex-shrink:0;
+}
+.model-del:hover{background:rgba(212,96,96,0.25)}
+.pull-wrap{display:flex;gap:6px;margin-top:6px}
+.pull-input{
+  flex:1;
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+  color:var(--color-text);
+  padding:6px 8px;
+  border-radius:var(--radius-sm);
+  font-size:0.75rem;
+  font-family:inherit;
+  outline:none;
+}
+.pull-input:focus{border-color:var(--color-primary)}
+.pull-input::placeholder{color:var(--color-text-muted)}
+.pull-btn{
+  padding:6px 12px;
+  border-radius:var(--radius-sm);
+  border:1px solid rgba(123,200,228,0.3);
+  background:rgba(123,200,228,0.1);
+  color:var(--color-primary);
+  font-size:0.75rem;
+  font-weight:500;
+  font-family:inherit;
+  cursor:pointer;
+  transition:all 0.2s;
+  flex-shrink:0;
+}
+.pull-btn:hover{background:rgba(123,200,228,0.2)}
+
+/* Message history */
+.history-list{display:flex;flex-direction:column;gap:4px}
+.history-item{
+  padding:8px 10px;
+  border-radius:var(--radius-sm);
+  background:var(--color-glass);
+  border:1px solid var(--color-glass-edge);
+  cursor:default;
+}
+.history-subject{font-size:0.75rem;color:var(--color-text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-preview{font-size:0.7rem;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.history-time{font-size:0.6rem;color:var(--color-text-muted);margin-top:3px;font-family:'JetBrains Mono',monospace}
+
+/* Bottom action rail */
+#action-rail{
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;
+  padding:10px 20px;
+  background:var(--color-surface);
+  border-top:1px solid var(--color-glass-edge);
+  backdrop-filter:blur(20px);
+  flex-shrink:0;
+  flex-wrap:wrap;
+}
+.rail-btn{
+  padding:7px 16px;
+  border-radius:20px;
+  border:1px solid var(--color-glass-edge);
+  background:var(--color-glass);
+  color:var(--color-text-dim);
+  font-size:0.75rem;
+  font-family:inherit;
+  font-weight:500;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.rail-btn:hover{background:rgba(123,200,228,0.12);color:var(--color-primary);border-color:rgba(123,200,228,0.3)}
+.rail-btn.primary{border-color:rgba(123,200,228,0.3);color:var(--color-primary)}
+.rail-btn.accent{border-color:rgba(196,169,125,0.3);color:var(--color-accent)}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--color-surface);
+  border:1px solid var(--color-glass-edge);
+  border-radius:var(--radius-sm);
+  padding:10px 20px;
+  font-size:0.8rem;
+  color:var(--color-text);
+  backdrop-filter:blur(20px);
+  opacity:0;
+  transition:all 0.3s;
+  z-index:200;
+  pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Responsive */
+@media(max-width:1100px){
+  #bridge{grid-template-columns:240px 1fr 280px}
+}
+@media(max-width:900px){
+  #bridge{grid-template-columns:1fr;overflow-y:auto}
+  .panel-center{min-height:400px}
+}
+@media(max-width:600px){
+  #status-bar{padding:8px 12px}
+  .ship-name{font-size:0.95rem}
+  #bridge{padding:8px;gap:8px}
+  #action-rail{padding:8px 12px}
+}
+</style>
+</head>
+<body>
+
+<div id="status-bar">
+  <div class="left">
+    <span class="ship-name">Agnetic Starship OS</span>
+    <span class="health-dot" id="health-dot"></span>
+    <span class="status-label" id="health-label">Systems Nominal</span>
+  </div>
+  <div class="right">
+    <span class="clock" id="clock">--:--:--</span>
+  </div>
+</div>
+
+<div id="bridge">
+  <!-- LEFT PANEL -->
+  <div class="panel">
+    <div class="glass" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+      <div class="panel-title">Crew Manifest</div>
+      <div class="panel-scroll" id="agent-list"></div>
+    </div>
+    <div class="glass" style="display:flex;flex-direction:column;flex-shrink:0;max-height:220px">
+      <div class="panel-title">Ship Logs</div>
+      <div class="log-controls">
+        <select id="log-agent-select" onchange="loadLogs()"><option value="">All Agents</option></select>
+      </div>
+      <div class="log-viewer" id="log-viewer"></div>
+    </div>
+  </div>
+
+  <!-- CENTER PANEL - CHAT -->
+  <div class="chat-wrap">
+    <div class="chat-header">
+      <span style="font-size:0.7rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:1px">Communications</span>
+      <select id="chat-agent-select"></select>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg agent-msg" data-agent="ergo">
+        <div class="msg-sender">ERGO</div>
+        <div class="msg-text">Welcome aboard, Commander. All systems are online. How may I assist you today?</div>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="quickAction('ergo','status')">Ergo Status</button>
+      <button class="quick-btn" onclick="quickAction('romi','check')">Romi Check</button>
+      <button class="quick-btn" onclick="quickAction('proxy','ping')">Proxy Ping</button>
+      <button class="quick-btn" onclick="quickAction('ergo','security audit')">Security Audit</button>
+      <button class="quick-btn" onclick="quickAction('ergo','health check')">Health Check</button>
+    </div>
+    <div class="chat-input-wrap">
+      <input class="chat-input" id="chat-input" type="text" placeholder="Enter command..." onkeydown="if(event.key==='Enter')sendCommand()">
+      <button class="send-btn" onclick="sendCommand()">Send</button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel">
+    <div class="glass right-section" style="flex-shrink:0">
+      <div class="panel-title">Telemetry</div>
+      <div class="gauges" id="gauges">
+        <div class="gauge">
+          <div class="gauge-ring">
+            <svg viewBox="0 0 36 36">
+              <circle class="gauge-bg" cx="18" cy="18" r="15.9"/>
+              <circle class="gauge-fg" id="gauge-cpu" cx="18" cy="18" r="15.9" stroke="var(--color-primary)" stroke-dasharray="0 100"/>
+            </svg>
+            <div class="gauge-val" id="val-cpu">--%</div>
+          </div>
+          <div class="gauge-label">CPU</div>
+        </div>
+        <div class="gauge">
+          <div class="gauge-ring">
+            <svg viewBox="0 0 36 36">
+              <circle class="gauge-bg" cx="18" cy="18" r="15.9"/>
+              <circle class="gauge-fg" id="gauge-ram" cx="18" cy="18" r="15.9" stroke="var(--color-success)" stroke-dasharray="0 100"/>
+            </svg>
+            <div class="gauge-val" id="val-ram">--%</div>
+          </div>
+          <div class="gauge-label">RAM</div>
+        </div>
+        <div class="gauge">
+          <div class="gauge-ring">
+            <svg viewBox="0 0 36 36">
+              <circle class="gauge-bg" cx="18" cy="18" r="15.9"/>
+              <circle class="gauge-fg" id="gauge-disk" cx="18" cy="18" r="15.9" stroke="var(--color-accent)" stroke-dasharray="0 100"/>
+            </svg>
+            <div class="gauge-val" id="val-disk">--%</div>
+          </div>
+          <div class="gauge-label">Disk</div>
+        </div>
+        <div class="gauge">
+          <div class="gauge-ring">
+            <svg viewBox="0 0 36 36">
+              <circle class="gauge-bg" cx="18" cy="18" r="15.9"/>
+              <circle class="gauge-fg" id="gauge-net" cx="18" cy="18" r="15.9" stroke="var(--color-warning)" stroke-dasharray="0 100"/>
+            </svg>
+            <div class="gauge-val" id="val-net">--%</div>
+          </div>
+          <div class="gauge-label">Network</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass right-section" style="flex-shrink:0">
+      <div class="panel-title">GPU</div>
+      <div class="gpu-grid" id="gpu-info">
+        <div class="gpu-cell"><div class="gpu-cell-label">Vendor</div><div class="gpu-val" id="gpu-vendor">--</div></div>
+        <div class="gpu-cell"><div class="gpu-cell-label">Name</div><div class="gpu-val" id="gpu-name">--</div></div>
+        <div class="gpu-cell"><div class="gpu-cell-label">Driver</div><div class="gpu-val" id="gpu-driver">--</div></div>
+        <div class="gpu-cell"><div class="gpu-cell-label">CUDA</div><div class="gpu-val" id="gpu-cuda">--</div></div>
+        <div class="gpu-cell" style="grid-column:1/-1"><div class="gpu-cell-label">VRAM</div><div class="gpu-val" id="gpu-vram">--</div></div>
+      </div>
+    </div>
+
+    <div class="glass right-section" style="flex-shrink:0">
+      <div class="panel-title">Ollama Models</div>
+      <div class="panel-scroll" style="max-height:160px;overflow-y:auto">
+        <div class="model-list" id="model-list"></div>
+      </div>
+      <div class="pull-wrap">
+        <input class="pull-input" id="pull-input" type="text" placeholder="model name...">
+        <button class="pull-btn" onclick="pullModel()">Pull</button>
+      </div>
+    </div>
+
+    <div class="glass right-section" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column">
+      <div class="panel-title">Message History</div>
+      <div class="panel-scroll" id="history-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM ACTION RAIL -->
+<div id="action-rail">
+  <button class="rail-btn primary" onclick="quickAction('ergo','status')">Ergo Status</button>
+  <button class="rail-btn" onclick="quickAction('romi','check')">Romi Check</button>
+  <button class="rail-btn" onclick="quickAction('proxy','ping')">Proxy Ping</button>
+  <button class="rail-btn accent" onclick="quickAction('ergo','security audit')">Security Audit</button>
+  <button class="rail-btn" onclick="quickAction('ergo','health check')">Health Check</button>
+  <button class="rail-btn" onclick="refresh()">Refresh All</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const CIRCUMFERENCE = 2 * Math.PI * 15.9;
+let selectedAgent = 'ergo';
+
+function escapeHTML(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+async function fetchJSON(url, opts) {
+  try {
+    const r = await fetch(url, opts);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  } catch (e) {
+    console.error('fetchJSON error:', url, e);
+    return null;
+  }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+}
+
+function setGauge(id, pct) {
+  const el = document.getElementById(id);
+  const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
+  el.style.strokeDasharray = `${CIRCUMFERENCE}`;
+  el.style.strokeDashoffset = offset;
+  let color = 'var(--color-success)';
+  if (pct > 80) color = 'var(--color-alert)';
+  else if (pct > 60) color = 'var(--color-warning)';
+  el.style.stroke = color;
+}
+
+function formatSize(bytes) {
+  if (bytes == null) return '--';
+  if (bytes >= 1e9) return (bytes / 1e9).toFixed(1) + ' GB';
+  if (bytes >= 1e6) return (bytes / 1e6).toFixed(0) + ' MB';
+  return bytes + ' B';
+}
+
+function getAgentColor(name) {
+  const n = (name || '').toLowerCase();
+  if (n === 'proxy') return '#8A9BB0';
+  if (n === 'romi') return '#5B8DEF';
+  if (n === 'ergo') return 'var(--color-accent)';
+  return 'var(--color-text-muted)';
+}
+
+async function refresh() {
+  const data = await fetchJSON('/api/dashboard');
+  if (!data) return;
+
+  // Health
+  const dot = document.getElementById('health-dot');
+  const label = document.getElementById('health-label');
+  const ok = data.status === 'ok' || data.status === 'online';
+  dot.className = 'health-dot' + (ok ? '' : ' alert');
+  label.textContent = ok ? 'Systems Nominal' : 'Degraded';
+
+  // Agents
+  const agents = data.agents || {};
+  const agentList = document.getElementById('agent-list');
+  const chatSelect = document.getElementById('chat-agent-select');
+  const logSelect = document.getElementById('log-agent-select');
+
+  const prevChat = chatSelect.value;
+  const prevLog = logSelect.value;
+
+  let html = '<div class="agent-list">';
+  const agentKeys = Object.keys(agents);
+  for (const key of agentKeys) {
+    const a = agents[key];
+    const online = a.status === 'online' || a.running;
+    const running = a.running ? 'Running' : 'Idle';
+    const sel = key === selectedAgent ? ' selected' : '';
+    html += `<div class="agent-item${sel}" onclick="selectAgent('${escapeHTML(key)}')">
+      <div class="agent-dot ${online ? 'online' : 'offline'}"></div>
+      <div class="agent-info">
+        <div class="agent-name">${escapeHTML(a.name || key)}</div>
+        <div class="agent-meta">
+          <span class="agent-model">${escapeHTML(a.model || '--')}</span>
+          <span class="agent-status${a.running ? '' : ' idle'}">${running}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  agentList.innerHTML = html;
+
+  // Update selects
+  let opts = '';
+  for (const key of agentKeys) {
+    const a = agents[key];
+    opts += `<option value="${escapeHTML(key)}">${escapeHTML(a.name || key)}</option>`;
+  }
+  chatSelect.innerHTML = opts;
+  logSelect.innerHTML = '<option value="">All Agents</option>' + opts;
+  if (prevChat && agents[prevChat]) chatSelect.value = prevChat;
+  if (prevLog) logSelect.value = prevLog;
+  if (!chatSelect.value && agentKeys.length) chatSelect.value = agentKeys.includes(selectedAgent) ? selectedAgent : agentKeys[0];
+
+  // Telemetry
+  const tel = (data.telemetry && data.telemetry.full) || data.telemetry || {};
+  const cpu = parseFloat(tel.cpu || tel.cpu_percent || 0);
+  const ram = parseFloat(tel.ram || tel.ram_percent || 0);
+  const disk = parseFloat(tel.disk || tel.disk_percent || 0);
+  const net = parseFloat(tel.network || tel.net || 0);
+  setGauge('gauge-cpu', cpu);
+  setGauge('gauge-ram', ram);
+  setGauge('gauge-disk', disk);
+  setGauge('gauge-net', Math.min(net, 100));
+  document.getElementById('val-cpu').textContent = cpu.toFixed(1) + '%';
+  document.getElementById('val-ram').textContent = ram.toFixed(1) + '%';
+  document.getElementById('val-disk').textContent = disk.toFixed(1) + '%';
+  document.getElementById('val-net').textContent = net.toFixed(1) + '%';
+
+  // GPU
+  const gpu = data.gpu || {};
+  document.getElementById('gpu-vendor').textContent = gpu.vendor || '--';
+  document.getElementById('gpu-name').textContent = gpu.name || '--';
+  document.getElementById('gpu-driver').textContent = gpu.driver || '--';
+  document.getElementById('gpu-cuda').textContent = gpu.cuda_version || gpu.cuda || '--';
+  document.getElementById('gpu-vram').textContent = gpu.vram ? formatSize(gpu.vram) : (gpu.vram_text || '--');
+
+  // Ollama models
+  const models = (data.ollama && data.ollama.models) || [];
+  const ml = document.getElementById('model-list');
+  if (models.length === 0) {
+    ml.innerHTML = '<div style="padding:8px;color:var(--color-text-muted);font-size:0.75rem">No models installed</div>';
+  } else {
+    let mhtml = '';
+    for (const m of models) {
+      const name = m.name || m.model || m;
+      const size = typeof m === 'object' ? m.size : null;
+      mhtml += `<div class="model-item">
+        <div class="model-name">${escapeHTML(String(name))}</div>
+        <div class="model-size">${formatSize(size)}</div>
+        <button class="model-del" onclick="deleteModel('${escapeHTML(String(name))}')">Delete</button>
+      </div>`;
+    }
+    ml.innerHTML = mhtml;
+  }
+
+  loadHistory();
+}
+
+function selectAgent(name) {
+  selectedAgent = name;
+  const chatSelect = document.getElementById('chat-agent-select');
+  chatSelect.value = name;
+  document.querySelectorAll('.agent-item').forEach(el => el.classList.remove('selected'));
+  refresh();
+}
+
+function addMessage(sender, text, isUser, agent) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (isUser ? 'user' : 'agent-msg');
+  if (agent) div.setAttribute('data-agent', agent);
+  const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  div.innerHTML = `<div class="msg-sender">${escapeHTML(sender)}</div><div class="msg-text">${escapeHTML(text)}</div><div class="msg-time">${now}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendCommand() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  const agent = document.getElementById('chat-agent-select').value || selectedAgent;
+
+  addMessage('Commander', text, true);
+
+  const resp = await fetchJSON('/api/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ agent, command: text, args: [] })
+  });
+
+  if (resp) {
+    const reply = resp.response || resp.message || resp.result || resp.error || JSON.stringify(resp);
+    addMessage(resp.agent || agent, reply, false, resp.agent || agent);
+  } else {
+    addMessage('System', 'Error: No response from server.', false, 'system');
+  }
+}
+
+function quickAction(agent, command) {
+  document.getElementById('chat-agent-select').value = agent;
+  document.getElementById('chat-input').value = command;
+  sendCommand();
+}
+
+async function loadLogs() {
+  const agent = document.getElementById('log-agent-select').value;
+  const url = '/api/logs' + (agent ? '?agent=' + encodeURIComponent(agent) : '');
+  const data = await fetchJSON(url);
+  const viewer = document.getElementById('log-viewer');
+  if (!data) { viewer.innerHTML = '<div class="log-line" style="color:var(--color-text-muted)">No logs available</div>'; return; }
+  const logs = data.logs || data.lines || data || [];
+  if (!Array.isArray(logs) || logs.length === 0) {
+    viewer.innerHTML = '<div class="log-line" style="color:var(--color-text-muted)">No logs available</div>';
+    return;
+  }
+  let html = '';
+  for (const l of logs) {
+    const ts = l.time || l.timestamp || '';
+    const level = (l.level || 'info').toLowerCase();
+    const msg = l.message || l.msg || l.text || JSON.stringify(l);
+    html += `<div class="log-line"><span class="log-ts">${escapeHTML(String(ts))}</span><span class="log-level ${level}">${escapeHTML(level.toUpperCase())}</span>${escapeHTML(String(msg))}</div>`;
+  }
+  viewer.innerHTML = html;
+  viewer.scrollTop = viewer.scrollHeight;
+}
+
+async function loadHistory() {
+  const data = await fetchJSON('/api/history?limit=20');
+  const list = document.getElementById('history-list');
+  if (!data) { list.innerHTML = '<div style="padding:8px;color:var(--color-text-muted);font-size:0.75rem">No history</div>'; return; }
+  const msgs = data.messages || data.history || data || [];
+  if (!Array.isArray(msgs) || msgs.length === 0) {
+    list.innerHTML = '<div style="padding:8px;color:var(--color-text-muted);font-size:0.75rem">No history</div>';
+    return;
+  }
+  let html = '';
+  for (const m of msgs) {
+    const ts = m.time || m.timestamp || '';
+    const subject = m.subject || m.agent || m.from || '';
+    const preview = m.preview || m.message || m.text || m.body || '';
+    html += `<div class="history-item">
+      <div class="history-time">${escapeHTML(String(ts))}</div>
+      <div class="history-subject">${escapeHTML(String(subject))}</div>
+      <div class="history-preview">${escapeHTML(String(preview))}</div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
+async function pullModel() {
+  const input = document.getElementById('pull-input');
+  const model = input.value.trim();
+  if (!model) return;
+  input.value = '';
+  toast('Pulling ' + model + '...');
+  const resp = await fetchJSON('/api/ollama/pull', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model })
+  });
+  if (resp && resp.error) {
+    toast('Error: ' + resp.error);
+  } else {
+    toast('Pull started for ' + model);
+    setTimeout(refresh, 2000);
+  }
+}
+
+async function deleteModel(name) {
+  if (!confirm('Delete model ' + name + '?')) return;
+  toast('Deleting ' + name + '...');
+  const resp = await fetchJSON('/api/ollama/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: name })
+  });
+  if (resp && resp.error) {
+    toast('Error: ' + resp.error);
+  } else {
+    toast('Model deleted');
+    setTimeout(refresh, 1000);
+  }
+}
+
+// Init
+updateClock();
+setInterval(updateClock, 1000);
+refresh();
+setInterval(refresh, 3000);
+loadLogs();
+setInterval(loadLogs, 5000);
+</script>
+</body>
+</html>

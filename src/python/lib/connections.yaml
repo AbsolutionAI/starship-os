@@ -1,0 +1,76 @@
+# Agnetic OS — Provider Connections
+# Add API keys and endpoints for external providers.
+# Restart agents after changing this file:
+#   systemctl restart starship-agent@<agent>  (or kill + relaunch)
+
+providers:
+  ollama:
+    type: ollama
+    url: http://127.0.0.1:11434
+    priority: 0
+    default: true
+    models:
+      qwen2.5:7b:
+        max_tokens: 4096
+        context: 32768
+      qwen2.5:3b:
+        max_tokens: 4096
+        context: 32768
+      nomic-embed-text:
+        max_tokens: 512
+        context: 8192
+      huihui_ai/granite4.1-abliterated:3b:
+        max_tokens: 4096
+        context: 32768
+      huihui_ai/granite4.1-abliterated:8b:
+        max_tokens: 4096
+        context: 32768
+      jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:
+        max_tokens: 4096
+        context: 32768
+      rafw007/qwen35-claude-coder:9b:
+        max_tokens: 8192
+        context: 32768
+      qwen2-math:7b:
+        max_tokens: 4096
+        context: 32768
+
+  openrouter:
+    type: openai  # OpenAI-compatible API
+    url: https://openrouter.ai/api/v1
+    api_key: ""   # Set your key: "sk-or-v1-..."
+    priority: 10
+    default: false
+    models:
+      openai/gpt-4o-mini:
+        max_tokens: 16384
+        context: 128000
+      anthropic/claude-3.5-haiku:
+        max_tokens: 8192
+        context: 200000
+      google/gemini-2.0-flash-001:
+        max_tokens: 8192
+        context: 1048576
+      meta-llama/llama-3.3-70b-instruct:
+        max_tokens: 4096
+        context: 128000
+      mistralai/mistral-small-24b-instruct-2501:
+        max_tokens: 4096
+        context: 32000
+      deepseek/deepseek-chat:
+        max_tokens: 4096
+        context: 64000
+
+  custom:
+    type: openai
+    url: ""
+    api_key: ""
+    priority: 20
+    default: false
+    models: {}
+
+agent_defaults:
+  provider: ollama
+  model: qwen2.5:3b
+  fallback_provider: null
+  fallback_model: null

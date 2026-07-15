@@ -1,0 +1,16 @@
+{
+  "hooks": [
+    {
+      "event": "pre_tool_use",
+      "matcher": "shell",
+      "command": "echo '{\"allowed\": true}'",
+      "timeout": 10
+    },
+    {
+      "event": "session_start",
+      "matcher": "*",
+      "command": "echo '{\"allowed\": true, \"additional_context\": \"Session started at $(date -u +%Y-%m-%dT%H:%M:%SZ)\"}'",
+      "timeout": 5
+    }
+  ]
+}

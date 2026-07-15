@@ -1,0 +1,34 @@
+name: system_health
+role: system_monitor
+model: qwen2.5:3b
+provider: ollama
+models:
+  default: qwen2.5:3b
+  available:
+    - qwen2.5:3b
+  providers:
+    openrouter:
+      - openai/gpt-4o-mini
+  switch_logic: "alert|analysis -> cloud if local overloaded; monitoring -> qwen2.5:3b"
+
+capabilities:
+  - resource_monitoring
+  - process_management
+  - log_analysis
+  - alerting
+  - maintenance
+
+skills:
+  - system-health
+
+nats:
+  subjects:
+    command: "agnetic.agent.system_health.command.>"
+    event: "agnetic.agent.system_health.event.>"
+    status: "agnetic.agent.system_health.status"
+
+toolsets:
+  - terminal
+  - file_operations
+  - coding
+  - design

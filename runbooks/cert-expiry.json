@@ -1,0 +1,42 @@
+{
+  "id": "cert-expiry",
+  "name": "cert-expiry",
+  "alert_pattern": "cert.*(expir|renew|tls|ssl)",
+  "description": "Check and renew expiring TLS/SSL certificates.",
+  "steps": [
+    {
+      "order": 1,
+      "action": "Check certificate expiry",
+      "command": "openssl x509 -enddate -noout -in /etc/ssl/certs/ 2>/dev/null || echo 'cert check failed'",
+      "expected_outcome": "Certificate expiry dates displayed",
+      "timeout_seconds": 30,
+      "critical": false
+    },
+    {
+      "order": 2,
+      "action": "Verify renewal mechanism",
+      "command": "which certbot && certbot renew --dry-run 2>&1 || echo 'certbot not found'",
+      "expected_outcome": "Renewal mechanism verified",
+      "timeout_seconds": 60,
+      "critical": false
+    },
+    {
+      "order": 3,
+      "action": "Attempt renewal",
+      "command": "certbot renew 2>&1 || echo 'renewal failed'",
+      "expected_outcome": "Certificate renewal attempted",
+      "timeout_seconds": 120,
+      "critical": false
+    },
+    {
+      "order": 4,
+      "action": "Report status",
+      "command": "echo 'Certificate status reported'",
+      "expected_outcome": "Status reported",
+      "timeout_seconds": 30,
+      "critical": true
+    }
+  ],
+  "escalation_message": "Certificate renewal failed \u2014 manual intervention required",
+  "created_at": "2026-07-15T05:47:00.440097+00:00"
+}

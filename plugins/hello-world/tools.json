@@ -1,0 +1,28 @@
+[
+  {
+    "name": "greet",
+    "description": "Return a greeting message. Optionally customize the recipient name.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name to greet (optional)"
+        }
+      }
+    }
+  },
+  {
+    "name": "current_time",
+    "description": "Return the current system time in ISO format.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "timezone": {
+          "type": "string",
+          "description": "Timezone (optional, default UTC)"
+        }
+      }
+    }
+  }
+]

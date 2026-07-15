@@ -1,0 +1,41 @@
+{
+  "$schema": "https://spec.modelcontextprotocol.io/schema/2025/servers.json",
+  "description": "MCP server configuration for Agnetic OS agents. Add stdio or HTTP MCP servers here.",
+  "servers": {
+    "example-filesystem": {
+      "name": "filesystem",
+      "description": "Safe filesystem access with path restrictions",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/opt/agnetic", "/root"],
+      "transport": "stdio",
+      "enabled": false
+    },
+    "example-github": {
+      "name": "github",
+      "description": "GitHub API integration — repos, issues, PRs, searches",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": ""
+      },
+      "transport": "stdio",
+      "enabled": false
+    },
+    "example-puppeteer": {
+      "name": "puppeteer",
+      "description": "Browser automation via Puppeteer MCP server",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "transport": "stdio",
+      "enabled": false
+    },
+    "example-sqlite": {
+      "name": "sqlite",
+      "description": "SQLite database querying and management",
+      "command": "uvx",
+      "args": ["mcp-server-sqlite", "--db-path", "/var/lib/agnetic/mcp-sqlite.db"],
+      "transport": "stdio",
+      "enabled": false
+    }
+  }
+}

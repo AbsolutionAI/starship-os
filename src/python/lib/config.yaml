@@ -1,0 +1,117 @@
+providers:
+  ollama:
+    type: ollama
+    url: http://127.0.0.1:11435
+    priority: 0
+    default: true
+  openrouter:
+    type: openai
+    url: https://openrouter.ai/api/v1
+    api_key: ""
+    priority: 10
+    default: false
+  custom:
+    type: openai
+    url: ""
+    api_key: ""
+    priority: 20
+    default: false
+
+agents:
+  orchestrator:
+    model: qwen2.5:7b
+    provider: ollama
+    fallback_provider: null
+    fallback_model: qwen2.5:3b
+    nats_url: nats://127.0.0.1:4222
+    nats_token: ""
+    enabled: true
+    skills: []
+    schedule: []
+
+  proxy:
+    model: qwen2.5:7b
+    provider: ollama
+    fallback_provider: null
+    fallback_model: qwen2.5:3b
+    nats_url: nats://127.0.0.1:4222
+    nats_token: ""
+    enabled: true
+    skills:
+      - proxy-diagnostics
+      - system-health
+    schedule: []
+
+  romi:
+    model: qwen2.5:3b
+    provider: ollama
+    fallback_provider: null
+    fallback_model: null
+    nats_url: nats://127.0.0.1:4222
+    nats_token: ""
+    enabled: true
+    skills:
+      - romi-interface
+      - knowledge-store
+    schedule:
+      - name: captains-briefing
+        cron: "0 0 * * *"
+        workflow: captains-briefing
+
+  ergo:
+    model: qwen2.5:3b
+    provider: ollama
+    fallback_provider: null
+    fallback_model: null
+    nats_url: nats://127.0.0.1:4222
+    nats_token: ""
+    enabled: true
+    skills:
+      - ergo-automation
+      - orchestrate-failover
+      - flamingo-fleet
+    schedule:
+      - name: nightly-health
+        cron: "0 2 * * *"
+        workflow: system-health
+      - name: weekly-audit
+        cron: "0 6 * * 1"
+        workflow: security-audit
+
+  system_health:
+    model: qwen2.5:3b
+    provider: ollama
+    fallback_provider: null
+    fallback_model: null
+    nats_url: nats://127.0.0.1:4222
+    nats_token: ""
+    enabled: true
+    skills: []
+    schedule: []
+
+  knowledge_store:
+    model: qwen2.5:3b
+    provider: ollama
+    fallback_provider: null
+    fallback_model: null
+    nats_url: nats://127.0.0.1:4222
+    nats_token: ""
+    enabled: true
+    skills: []
+    schedule: []
+
+nats:
+  url: nats://127.0.0.1:4222
+  jetstream: true
+  auth_token: ""
+  auth_enabled: false
+
+ollama:
+  url: http://127.0.0.1:11435
+  default_model: qwen2.5:3b
+
+connections_file: /opt/agnetic/lib/connections.yaml
+
+dashboard:
+  port: 8899
+  host: 0.0.0.0

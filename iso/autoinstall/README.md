@@ -17,12 +17,21 @@ cloud-localds seed.img meta-data user-data.server.yaml
 | `user-data.server.yaml` | server | Default mesh + Eve-V2 |
 | `user-data.ops.yaml` | ops | Full mesh + coding models, larger disk |
 
-## Post-install
+## Post-install / firstboot
 
-Late-commands clone/install from the Starship OS package or git tree and run:
+Late-commands write `/etc/starship/firstboot.env` + `profile.yaml`, then invoke:
 
 ```bash
 STARSHIP_PROFILE=<edge|server|ops> /opt/starship/bin/starship-firstboot.sh
 ```
 
-`starship-firstboot.sh` (see `scripts/starship-firstboot.sh`) selects profile, pulls models, enables systemd mesh.
+| Profile | NATS (firstboot) | Notes |
+|---------|------------------|-------|
+| edge | agent-bus | thin node |
+| server | agent-bus | default mesh |
+| ops | multi-tenant accounts | optional `STARSHIP_NATS_TLS=1` |
+
+Static smoke (no QEMU): `bash scripts/iso-firstboot-smoke.sh`  
+Full ISO: `scripts/test-iso.sh` / `scripts/build-iso.sh`
+
+`starship-firstboot.sh` selects profile, fleet register, NATS mode, enables mesh.

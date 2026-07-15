@@ -1,6 +1,6 @@
 # Starship OS — Streamline, Standardize, Bare-Metal Plan (Alpha 2.1)
 
-**Status:** Phase 0–2 complete · Phase 3 in progress  
+**Status:** Phase 0–3 complete (Alpha 2.1.0-alpha.3 packaging)  
 **Canonical repo:** https://github.com/andromi-hash/starship-os  
 **Legacy Alpha 2.0:** https://github.com/andromi-hash/agnetic-os (archived source)
 
@@ -61,8 +61,8 @@
 - [x] Install `sandbox_run` to `/opt/starship/bin` (install-daemon)
 - [x] NATS TLS optional (`gen-nats-tls.sh`, `STARSHIP_NATS_TLS=1`, nats_connect TLS)
 - [x] Wire agents/dashboard units to `nats_connect` + `/etc/starship/nats.env`
-- [ ] ISO firstboot smoke (edge/server/ops autoinstall paths)
-- [ ] Seccomp allowlist in C11 sandbox (post-timing)
+- [x] ISO firstboot smoke (`scripts/iso-firstboot-smoke.sh` + autoinstall hooks)
+- [x] Seccomp allowlist in C11 sandbox (`HAVE_SECCOMP`, libseccomp)
 
 ## Language map
 

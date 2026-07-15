@@ -26,5 +26,6 @@ autoinstall:
     - build-essential
     - ca-certificates
   late-commands:
-    - curtin in-target --target=/target -- bash -c 'mkdir -p /opt/starship /etc/starship /var/lib/starship /var/log/starship && ln -sfn /opt/starship /opt/agnetic && echo "STARSHIP_PROFILE=server" > /etc/starship/firstboot.env && echo "profile: server" > /etc/starship/profile.yaml'
+    - curtin in-target --target=/target -- bash -c 'mkdir -p /opt/starship/bin /etc/starship /var/lib/starship /var/log/starship && ln -sfn /opt/starship /opt/agnetic && echo "STARSHIP_PROFILE=server" > /etc/starship/firstboot.env && echo "profile: server" > /etc/starship/profile.yaml'
     - curtin in-target --target=/target -- bash -c 'systemctl enable ssh || true'
+    - curtin in-target --target=/target -- bash -c 'if [ -x /opt/starship/bin/starship-firstboot.sh ]; then STARSHIP_PROFILE=server /opt/starship/bin/starship-firstboot.sh; elif [ -f /opt/starship/lib/starship/scripts/starship-firstboot.sh ]; then STARSHIP_PROFILE=server bash /opt/starship/lib/starship/scripts/starship-firstboot.sh; fi || true'

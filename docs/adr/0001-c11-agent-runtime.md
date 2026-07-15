@@ -69,6 +69,13 @@ Run: `make bench` or `bash scripts/bench-sandbox.sh 200`
 
 **Verdict:** C11 internal p50 **≪ 2ms** — criterion met. Outer spawn adds ~0.6ms for process bootstrap; still acceptable for Alpha 2.1 optional path.
 
+## Seccomp (Phase 3)
+
+- Built with `-DHAVE_SECCOMP=1` when `libseccomp` is available
+- Child applies BPF allowlist before `exec` (fail closed on load error → exit 125)
+- Default deny: `socket`, `mount`, `ptrace`, `reboot`, …
+- Disable: `./sandbox_run --no-seccomp -- …`
+
 ## Optional Python bridge
 
 - `agents/sandbox_native.py` — subprocess bridge to `sandbox_run`

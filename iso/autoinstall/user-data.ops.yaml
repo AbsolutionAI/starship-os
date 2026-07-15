@@ -27,5 +27,7 @@ autoinstall:
     - ca-certificates
     - jq
   late-commands:
-    - curtin in-target --target=/target -- bash -c 'mkdir -p /opt/starship /etc/starship /var/lib/starship /var/log/starship && ln -sfn /opt/starship /opt/agnetic && echo "STARSHIP_PROFILE=ops" > /etc/starship/firstboot.env && echo "profile: ops" > /etc/starship/profile.yaml'
+    - curtin in-target --target=/target -- bash -c 'mkdir -p /opt/starship/bin /etc/starship /var/lib/starship /var/log/starship && ln -sfn /opt/starship /opt/agnetic && echo "STARSHIP_PROFILE=ops" > /etc/starship/firstboot.env && echo "profile: ops" > /etc/starship/profile.yaml'
     - curtin in-target --target=/target -- bash -c 'systemctl enable ssh || true'
+    # Run firstboot when package/scripts are present on the image
+    - curtin in-target --target=/target -- bash -c 'if [ -x /opt/starship/bin/starship-firstboot.sh ]; then STARSHIP_PROFILE=ops /opt/starship/bin/starship-firstboot.sh; elif [ -f /opt/starship/lib/starship/scripts/starship-firstboot.sh ]; then STARSHIP_PROFILE=ops bash /opt/starship/lib/starship/scripts/starship-firstboot.sh; fi || true'

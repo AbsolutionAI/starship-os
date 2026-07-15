@@ -3,7 +3,7 @@ CARGO := $(HOME)/.cargo/bin/cargo
 GO := /tmp/go/bin/go
 export PATH := /tmp/go/bin:$(HOME)/.cargo/bin:$(HOME)/.local/bin:$(PATH)
 
-.PHONY: all build build-agent cli install uninstall run dev stop clean status profile sandbox smoke bench
+.PHONY: all build build-agent cli install uninstall run dev stop clean status profile sandbox smoke bench iso-smoke
 
 all: build build-agent
 
@@ -89,6 +89,9 @@ nats-accounts:
 # ─── Smoke tests ────────────────────────────────────────────────────
 smoke:
 	@bash scripts/smoke-test.sh
+
+iso-smoke:
+	@bash scripts/iso-firstboot-smoke.sh
 
 # ─── Clean ──────────────────────────────────────────────────────────
 clean:

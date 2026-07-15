@@ -2,9 +2,10 @@
 # Multi-node agent mesh settings
 
 cluster:
-  name: agnetic-mesh
+  name: starship-mesh
   heartbeat_interval: 30        # seconds between heartbeats
   offline_threshold: 3          # missed heartbeats before marking offline
+  # Fleet topology lives in config/fleet.yaml (plants / ops / red-blue)
 
 node:
   roles: [proxy, romi, ergo]    # agent roles this node can serve

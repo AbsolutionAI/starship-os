@@ -1,0 +1,76 @@
+# Starship OS — Fleet topology (Alpha 2.1)
+# Plants = physical/logical sites · Roles = node duty · Teams = red/blue exercise
+
+version: "2.1"
+fleet:
+  name: starship-fleet
+  ops_manager:
+    enabled: true
+    node: local                    # hostname or node_id that runs ops manager
+    subjects:
+      command: starship.fleet.ops.command.>
+      status: starship.fleet.ops.status
+      event: starship.fleet.ops.event.>
+
+# Logical sites (plants). Nodes join one plant.
+plants:
+  plant-alpha:
+    name: Alpha Plant
+    description: Primary production mesh
+    region: local
+    profile: server                # edge | server | ops
+    roles_allowed: [proxy, romi, ergo, ops, plant-controller]
+  plant-edge:
+    name: Edge Plant
+    description: Edge / IoT style nodes
+    region: edge
+    profile: edge
+    roles_allowed: [proxy, plant-controller]
+  plant-range:
+    name: Training Range
+    description: Red/blue exercise plant (isolated policy)
+    region: range
+    profile: ops
+    roles_allowed: [proxy, romi, ergo, red-team, blue-team, ops]
+    isolation: true
+
+# Node role catalog
+roles:
+  proxy:
+    team: ops
+    description: Diagnostics / security agent
+  romi:
+    team: ops
+    description: User interface agent
+  ergo:
+    team: ops
+    description: Automation agent
+  ops:
+    team: ops
+    description: Ops manager / C2 node
+  plant-controller:
+    team: ops
+    description: Local plant orchestrator
+  red-team:
+    team: red
+    description: Offensive exercise agent (policy-restricted)
+  blue-team:
+    team: blue
+    description: Defensive exercise agent
+
+# Red/blue exercise defaults (range plant only)
+red_blue:
+  enabled: true
+  default_plant: plant-range
+  rules:
+    - red-team never unrestricted OpenCode
+    - red-team tools limited to toolset: security_audit
+    - blue-team may use full diagnostics
+    - cross-plant red traffic denied by default
+
+# This node (override via /etc/starship/fleet-node.yaml)
+node:
+  plant: plant-alpha
+  roles: [proxy, romi, ergo]
+  team: ops
+  profile: auto                    # auto | edge | server | ops

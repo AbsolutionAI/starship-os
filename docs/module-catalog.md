@@ -42,6 +42,8 @@ Generate full API docs in Phase 0.1. Current inventory:
 | Path | Purpose |
 |------|---------|
 | `src/cpp/vector_index.cpp` | Embedding normalize/pool (pybind11) |
-| `agneticctl/` | Go CLI |
+| `starshipctl/` | Go CLI (`fleet`, agent, telemetry, …) |
+| `services/fleet.py` | Fleet / plants / ops manager / red-blue |
+| `config/fleet.yaml` | Fleet topology |
 | `agent/` | Rust StarAgent telemetry |
 | `security/apparmor/` | AppArmor profiles |

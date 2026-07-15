@@ -42,7 +42,7 @@
 - [x] C11 feasibility ADR + sandbox spike (`docs/adr/0001`, `src/c/sandbox_spike`)
 - [x] ISO autoinstall stubs (`iso/autoinstall/`)
 - [x] OpenCode + oh-my-opencode-slim vendoring (pins + tarballs + install script)
-- [ ] Fleet / ops manager / plant / red-blue
+- [x] Fleet / ops manager / plant / red-blue scaffold (`config/fleet.yaml`, `services/fleet.py`, `starshipctl fleet`)
 
 ## Language map
 

@@ -45,6 +45,18 @@ subjects:
       net: "agnetic.telemetry.net"
   workflow: "starship.workflow.>"
   skill: "starship.skill.>"
+  fleet:
+    register: "starship.fleet.register"
+    heartbeat: "starship.fleet.heartbeat"
+    status: "starship.fleet.status"
+    ops_status: "starship.fleet.ops.status"
+    exercise: "starship.fleet.exercise"
+    legacy:
+      register: "agnetic.fleet.register"
+      heartbeat: "agnetic.fleet.heartbeat"
+      status: "agnetic.fleet.status"
+      ops_status: "agnetic.fleet.ops.status"
+      exercise: "agnetic.fleet.exercise"
 
 # Command types (used as wildcard *)
 commands:

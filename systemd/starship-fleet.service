@@ -1,0 +1,25 @@
+[Unit]
+Description=Starship OS - Fleet Manager (ops / plants)
+After=network.target agnetic-nats.service
+Wants=agnetic-nats.service
+Documentation=https://github.com/andromi-hash/starship-os
+
+[Service]
+Type=simple
+ExecStart=/opt/starship/venv/bin/python3 /opt/starship/lib/starship/services/fleet.py daemon
+Restart=always
+RestartSec=10
+User=agnetic
+Group=agnetic
+Environment=PYTHONPATH=/opt/starship/lib/starship:/opt/starship/lib/starship/agents
+Environment=STARSHIP_ROOT=/opt/starship
+Environment=AGNETIC_ROOT=/opt/starship
+Environment=NATS_URL=nats://127.0.0.1:4222
+WorkingDirectory=/opt/starship/lib/starship
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/starship /var/log/starship /tmp
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

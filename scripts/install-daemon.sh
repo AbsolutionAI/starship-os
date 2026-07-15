@@ -156,6 +156,19 @@ cp "$REPO_DIR/agents/romi.yaml" /etc/starship/ 2>/dev/null || true
 cp "$REPO_DIR/agents/ergo.yaml" /etc/starship/ 2>/dev/null || true
 cp "$REPO_DIR/agents/orchestrator.yaml" /etc/starship/ 2>/dev/null || true
 
+# Fleet topology
+if [[ -f "$REPO_DIR/config/fleet.yaml" ]]; then
+    cp "$REPO_DIR/config/fleet.yaml" /etc/starship/fleet.yaml
+fi
+if [[ -f "$REPO_DIR/services/fleet.py" ]]; then
+    mkdir -p /opt/starship/lib/starship/services
+    cp "$REPO_DIR/services/fleet.py" /opt/starship/lib/starship/services/
+    chmod +x /opt/starship/lib/starship/services/fleet.py
+fi
+if [[ -f "$REPO_DIR/systemd/starship-fleet.service" ]]; then
+    cp "$REPO_DIR/systemd/starship-fleet.service" /etc/systemd/system/ 2>/dev/null || true
+fi
+
 # OpenCode / oh-my-opencode-slim Starship preset
 mkdir -p /etc/starship/opencode
 if [[ -f "$REPO_DIR/config/opencode/oh-my-opencode-slim.starship.json" ]]; then

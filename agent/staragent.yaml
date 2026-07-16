@@ -1,0 +1,21 @@
+# Starship OS — StarAgent Configuration
+# Installed to /etc/starship/agents/staragent.yaml
+
+nats:
+  url: "nats://127.0.0.1:4222"
+  # token: ""                     # shared token for fleet-bus auth
+
+telemetry:
+  interval_secs: 10               # how often to publish system telemetry
+
+osquery:
+  binary: "/opt/starship/bin/osqueryd"
+  config_path: "/etc/starship/osquery/starshipd.conf"
+  result_log: "/var/log/starship/osquery_results.jsonl"
+
+commands:
+  subscribe:
+    - "starship.agent.staragent.command.>"
+    - "agnetic.agent.staragent.command.>"
+
+# hostname: "node1"               # override; defaults to system hostname

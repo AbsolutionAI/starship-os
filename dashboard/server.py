@@ -42,6 +42,88 @@ if not STATIC_DIR.is_dir():
     STATIC_DIR = Path("/opt/agnetic/lib/dashboard/static")
 
 nc = None
+_telemetry_aggregator = None
+
+
+class TelemetryAggregator:
+    """Accumulates telemetry from NATS starship.telemetry.* subjects."""
+
+    def __init__(self):
+        self._nodes: dict[str, dict] = {}
+        self._lock = asyncio.Lock()
+
+    async def start(self, nats_conn):
+        try:
+            sub = await nats_conn.subscribe("starship.telemetry.>")
+            log.info("TelemetryAggregator subscribed to starship.telemetry.>")
+            asyncio.create_task(self._collect_loop(sub))
+        except Exception as e:
+            log.warning("TelemetryAggregator subscribe failed: %s", e)
+
+    async def _collect_loop(self, sub):
+        while True:
+            try:
+                msg = await sub.next_msg(timeout=300)
+                await self._ingest(msg)
+            except asyncio.TimeoutError:
+                continue
+            except Exception as e:
+                log.warning("TelemetryAggregator ingest error: %s", e)
+                break
+
+    async def _ingest(self, msg):
+        subject = msg.subject
+        parts = subject.split(".")
+        if len(parts) < 4:
+            return
+        hostname = parts[2]
+        table = parts[3] if len(parts) > 3 else "status"
+        try:
+            data = json.loads(msg.data.decode())
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return
+        async with self._lock:
+            node = self._nodes.setdefault(hostname, {
+                "hostname": hostname,
+                "last_seen": datetime.utcnow().isoformat(),
+                "tables": {},
+            })
+            node["last_seen"] = datetime.utcnow().isoformat()
+            node["tables"][table] = data
+
+    async def get_stats(self) -> dict:
+        async with self._lock:
+            nodes = list(self._nodes.values())
+            nodes.sort(key=lambda n: n.get("hostname", ""))
+            online = [n for n in nodes if n.get("tables", {}).get("status")]
+            summary = {
+                "total_nodes": len(nodes),
+                "online_nodes": len(online),
+                "nodes": nodes,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+            if online:
+                # Aggregate average across online nodes
+                statuses = [n["tables"]["status"] for n in online if "status" in n.get("tables", {})]
+                if statuses:
+                    cpus = [s.get("cpu", 0) for s in statuses if isinstance(s.get("cpu"), (int, float))]
+                    mems = [s.get("memory_percent", s.get("memory_used", 0)) for s in statuses]
+                    disks = [s.get("disk_percent", s.get("disk_used", 0)) for s in statuses]
+                    summary["aggregate"] = {
+                        "cpu_avg": round(sum(cpus) / len(cpus), 1) if cpus else 0,
+                        "cpu_max": round(max(cpus), 1) if cpus else 0,
+                        "memory_percent_avg": round(sum(mems) / len(mems), 1) if mems else 0,
+                        "disk_percent_avg": round(sum(disks) / len(disks), 1) if disks else 0,
+                        "nodes_online": len(online),
+                    }
+            return summary
+
+
+def get_telemetry_aggregator():
+    global _telemetry_aggregator
+    if _telemetry_aggregator is None:
+        _telemetry_aggregator = TelemetryAggregator()
+    return _telemetry_aggregator
 
 
 def load_agent_configs():
@@ -255,7 +337,7 @@ async def handle_static_root(request):
     name = request.match_info.get("name", "")
     if name not in {
         "style.css", "boot.js", "ui.js", "dashboard.js", "agents.js",
-        "chat.js", "fleet.js", "incidents.js", "panels.js",
+        "chat.js", "fleet.js", "incidents.js", "panels.js", "shield.js",
     }:
         return web.Response(status=404, text="Not found")
     return _serve_static_file(name)
@@ -877,6 +959,22 @@ async def handle_incidents(request):
     return web.json_response({"incidents": [], "status": "no_data", "message": "No active incidents"})
 
 
+async def handle_shield_stats(request):
+    """Return aggregated telemetry from all remote agents."""
+    agg = get_telemetry_aggregator()
+    stats = await agg.get_stats()
+    if stats["total_nodes"] == 0:
+        return web.json_response({
+            "status": "no_data",
+            "message": "No telemetry received from remote agents yet",
+            "nodes": [],
+            "total_nodes": 0,
+            "online_nodes": 0,
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+    return web.json_response(stats)
+
+
 async def handle_marketplace_page(request):
     for p in (STATIC_DIR.parent / "marketplace.html", PROJECT_DIR / "dashboard" / "marketplace.html"):
         if p.exists():
@@ -913,7 +1011,7 @@ app.router.add_get("/api/incidents", handle_incidents)
 app.router.add_get("/api/policy", handle_no_data)
 app.router.add_get("/api/memory", handle_no_data)
 app.router.add_get("/api/skills", handle_no_data)
-app.router.add_get("/api/shield/stats", handle_no_data)
+app.router.add_get("/api/shield/stats", handle_shield_stats)
 app.router.add_get("/api/telemetry/stats", handle_no_data)
 app.router.add_get("/api/telemetry/recent", handle_no_data)
 app.router.add_get("/api/accounts", handle_no_data)
@@ -928,11 +1026,21 @@ app.router.add_get("/api/monitoring/cpu", handle_no_data)
 app.router.add_get("/{name}", handle_static_root)
 
 
+async def on_startup(app_):
+    try:
+        nats_conn = await get_nats()
+        agg = get_telemetry_aggregator()
+        await agg.start(nats_conn)
+    except Exception as e:
+        log.warning("TelemetryAggregator startup deferred: %s", e)
+
+
 async def cleanup(app_):
     global nc
     if nc:
         await nc.close()
 
+app.on_startup.append(on_startup)
 app.on_shutdown.append(cleanup)
 
 if __name__ == "__main__":

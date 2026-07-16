@@ -144,9 +144,13 @@ YAMLEOF
 chmod 644 "$CONFIG_DIR/staragent.yaml"
 log "Config written to $CONFIG_DIR/staragent.yaml"
 
-# ─── Create systemd service ────────────────────────────────────────
-log "Installing systemd service..."
-cat > /etc/systemd/system/agnetic-staragent.service <<UNIT
+SERVICE_OK=false
+
+# ─── Install as a service ──────────────────────────────────────────
+if command -v systemctl &>/dev/null && systemctl --version &>/dev/null 2>&1; then
+    log "Installing systemd service..."
+    mkdir -p /etc/systemd/system
+    cat > /etc/systemd/system/agnetic-staragent.service <<UNIT
 [Unit]
 Description=Starship OS - StarAgent Telemetry Collector
 After=network.target
@@ -169,17 +173,56 @@ ProtectHome=true
 WantedBy=multi-user.target
 UNIT
 
-systemctl daemon-reload
-systemctl enable agnetic-staragent.service
-systemctl start agnetic-staragent.service
+    systemctl daemon-reload
+    systemctl enable agnetic-staragent.service
+    systemctl start agnetic-staragent.service
+    log "Systemd service installed and started"
 
-log "Systemd service installed and started"
+    sleep 2
+    if [[ "$(systemctl is-active agnetic-staragent.service 2>/dev/null)" == "active" ]]; then
+        SERVICE_OK=true
+    fi
+elif command -v rc-service &>/dev/null; then
+    log "Installing OpenRC service..."
+    cat > /etc/init.d/agnetic-staragent <<INIT
+#!/sbin/openrc-run
+description="Starship OS - StarAgent Telemetry Collector"
+command="$INSTALL_DIR/bin/staragent"
+command_background=true
+pidfile="/run/agic-staragent.pid"
+INIT
+    chmod 755 /etc/init.d/agnetic-staragent
+    rc-service agnetic-staragent start
+    rc-update add agnetic-staragent default
+    log "OpenRC service installed and started"
+    sleep 2
+    if rc-service agnetic-staragent status &>/dev/null; then
+        SERVICE_OK=true
+    fi
+else
+    warn "No systemd or OpenRC detected. Starting agent directly..."
+    warn "To have it start on boot, add this to /etc/rc.local or your shell profile:"
+    warn "  nohup $INSTALL_DIR/bin/staragent > $LOG_DIR/staragent.log 2>&1 &"
+fi
+
+# ─── Start agent directly (if service manager not available) ──────
+if [[ "$SERVICE_OK" != "true" ]]; then
+    log "Starting staragent directly..."
+    mkdir -p "$LOG_DIR"
+    nohup "$INSTALL_DIR/bin/staragent" > "$LOG_DIR/staragent.log" 2>&1 &
+    AGENT_PID=$!
+    sleep 2
+    if kill -0 "$AGENT_PID" 2>/dev/null; then
+        log "StarAgent running (PID $AGENT_PID)"
+        SERVICE_OK=true
+    else
+        warn "StarAgent failed to start. Check: $LOG_DIR/staragent.log"
+    fi
+fi
 
 # ─── Verify ────────────────────────────────────────────────────────
-sleep 2
-SERVICE_STATUS=$(systemctl is-active agnetic-staragent.service 2>/dev/null || echo "inactive")
-if [[ "$SERVICE_STATUS" == "active" ]]; then
-    echo
+echo
+if [[ "$SERVICE_OK" == "true" ]]; then
     echo -e "${GREEN}============================================${NC}"
     echo -e "${GREEN}  Installation Complete — Agent Online${NC}"
     echo -e "${GREEN}============================================${NC}"
@@ -187,11 +230,18 @@ if [[ "$SERVICE_STATUS" == "active" ]]; then
     echo "  Binary:    $INSTALL_DIR/bin/staragent"
     echo "  Config:    $CONFIG_DIR/staragent.yaml"
     echo "  Logs:      $LOG_DIR"
-    echo "  Service:   agnetic-staragent.service"
     echo
     echo "  Dashboard: Open Shield tab (⛨) on your hub to see this node."
-    echo "  Logs:      journalctl -u agnetic-staragent -f"
     echo
 else
-    warn "Service installed but not active. Check: journalctl -u agnetic-staragent -n 50"
+    echo -e "${YELLOW}============================================${NC}"
+    echo -e "${YELLOW}  Installation Incomplete${NC}"
+    echo -e "${YELLOW}============================================${NC}"
+    echo
+    echo "  Binary installed at: $INSTALL_DIR/bin/staragent"
+    echo "  Config at:           $CONFIG_DIR/staragent.yaml"
+    echo
+    echo "  Start manually:      nohup $INSTALL_DIR/bin/staragent &"
+    echo "  View logs:           tail -f $LOG_DIR/staragent.log"
+    echo
 fi

@@ -47,6 +47,11 @@ async function refreshActiveView() {
     else if (view === 'incidents') await renderIncidentsView(target);
     else if (view === 'connect') await renderConnectView(target);
     else if (view === 'shield') await renderShieldView(target);
+    else if (view === 'incidents') await renderIncidentsView(target);
+    else if (view === 'telemetry') await renderTelemetryView(target);
+    else if (view === 'policy') await renderPolicyView(target);
+    else if (view === 'skills') await renderSkillsView(target);
+    else if (view === 'memory') await renderMemoryView(target);
   } catch (e) {
     console.error('refresh view', view, e);
   }

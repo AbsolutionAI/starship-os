@@ -340,6 +340,7 @@ async def handle_static_root(request):
     if name not in {
         "style.css", "boot.js", "ui.js", "dashboard.js", "agents.js",
         "chat.js", "fleet.js", "incidents.js", "panels.js", "shield.js",
+        "connect.js", "telemetry.js", "policy.js", "skills.js", "memory.js",
     }:
         return web.Response(status=404, text="Not found")
     return _serve_static_file(name)
@@ -958,7 +959,107 @@ async def handle_no_data(request):
 
 
 async def handle_incidents(request):
-    return web.json_response({"incidents": [], "status": "no_data", "message": "No active incidents"})
+    """Live incidents: down agents, stale endpoints, resource pressure, NATS."""
+    incidents = []
+
+    # 1. Down agents (configured but not running)
+    agent_configs = load_agent_configs()
+    agent_status = await get_agent_process_status()
+    for name, config in agent_configs.items():
+        if not agent_status.get(name, False):
+            incidents.append({
+                "id": f"agent-down-{name}",
+                "severity": "high",
+                "title": f"Agent offline: {name}",
+                "summary": f"{config.get('role', name)} agent is not running",
+                "status": "open",
+                "source": "agent",
+                "timestamp": datetime.utcnow().isoformat(),
+            })
+
+    # 2. Stale telemetry nodes (no report in 60s)
+    agg = get_telemetry_aggregator()
+    stats = await agg.get_stats()
+    now = datetime.utcnow()
+    for node in stats.get("nodes", []):
+        last_seen = node.get("last_seen", "")
+        if last_seen:
+            try:
+                seen = datetime.fromisoformat(last_seen)
+                if (now - seen).total_seconds() > 60:
+                    incidents.append({
+                        "id": f"stale-node-{node['hostname']}",
+                        "severity": "warn",
+                        "title": f"Stale endpoint: {node['hostname']}",
+                        "summary": f"No telemetry for {(now - seen).total_seconds():.0f}s",
+                        "status": "open",
+                        "source": "telemetry",
+                        "timestamp": last_seen,
+                    })
+            except ValueError:
+                pass
+
+    # 3. Resource pressure on hub
+    tel = get_system_telemetry().get("telemetry", {})
+    if tel.get("disk_percent", 0) > 95:
+        incidents.append({
+            "id": "disk-pressure",
+            "severity": "critical",
+            "title": "Hub disk usage critical",
+            "summary": f"Disk at {tel['disk_percent']}%",
+            "status": "open",
+            "source": "system",
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+    elif tel.get("disk_percent", 0) > 85:
+        incidents.append({
+            "id": "disk-warn",
+            "severity": "warn",
+            "title": "Hub disk usage high",
+            "summary": f"Disk at {tel['disk_percent']}%",
+            "status": "open",
+            "source": "system",
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+    if tel.get("memory_percent", 0) > 95:
+        incidents.append({
+            "id": "memory-pressure",
+            "severity": "critical",
+            "title": "Hub memory usage critical",
+            "summary": f"Memory at {tel['memory_percent']}%",
+            "status": "open",
+            "source": "system",
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+    elif tel.get("memory_percent", 0) > 85:
+        incidents.append({
+            "id": "memory-warn",
+            "severity": "warn",
+            "title": "Hub memory usage high",
+            "summary": f"Memory at {tel['memory_percent']}%",
+            "status": "open",
+            "source": "system",
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+
+    # 4. NATS disconnected
+    nats_ok = bool(nc and nc.is_connected)
+    if not nats_ok:
+        incidents.append({
+            "id": "nats-down",
+            "severity": "critical",
+            "title": "NATS bus disconnected",
+            "summary": "No connection to NATS message bus",
+            "status": "open",
+            "source": "system",
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+
+    return web.json_response({
+        "incidents": incidents,
+        "total": len(incidents),
+        "timestamp": datetime.utcnow().isoformat(),
+    })
 
 
 async def handle_shield_stats(request):
@@ -975,6 +1076,136 @@ async def handle_shield_stats(request):
             "timestamp": datetime.utcnow().isoformat(),
         })
     return web.json_response(stats)
+
+
+async def handle_telemetry_recent(request):
+    """Return recent per-node telemetry snapshots from the aggregator."""
+    agg = get_telemetry_aggregator()
+    stats = await agg.get_stats()
+    nodes = []
+    for node in stats.get("nodes", []):
+        tables = node.get("tables", {})
+        status = tables.get("status", {})
+        nodes.append({
+            "hostname": node["hostname"],
+            "last_seen": node.get("last_seen", ""),
+            "cpu": status.get("cpu", 0),
+            "memory_percent": status.get("memory_percent", 0),
+            "disk_percent": status.get("disk_percent", 0),
+            "rx_bytes": status.get("rx_bytes", 0),
+            "tx_bytes": status.get("tx_bytes", 0),
+            "load": status.get("load", {}),
+            "tables": list(tables.keys()),
+        })
+    return web.json_response({
+        "nodes": nodes,
+        "total": len(nodes),
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+
+
+async def handle_policy(request):
+    """Return osquery pack policies from config files."""
+    packs = {}
+    pack_sources = [
+        ("default", PROJECT_DIR / "config" / "osquery" / "starshipd.conf", "System monitoring queries"),
+        ("security", PROJECT_DIR / "config" / "osquery" / "packs" / "starship_security.conf", "Security monitoring queries"),
+        ("compliance", PROJECT_DIR / "config" / "osquery" / "packs" / "starship_compliance.conf", "Compliance monitoring queries"),
+    ]
+    for name, path, desc in pack_sources:
+        if path.exists():
+            try:
+                data = json.loads(path.read_text())
+                queries = []
+                schedule = data.get("schedule") or data.get("queries", {})
+                for qname, qdata in schedule.items():
+                    queries.append({
+                        "name": qname,
+                        "sql": qdata.get("query", ""),
+                        "interval": qdata.get("interval", 0),
+                        "description": qdata.get("description", ""),
+                        "value": qdata.get("value", ""),
+                    })
+                if queries:
+                    packs[name] = {
+                        "name": name,
+                        "description": desc,
+                        "queries": queries,
+                        "total": len(queries),
+                    }
+            except (json.JSONDecodeError, OSError) as e:
+                log.warning("Failed to load policy pack %s: %s", name, e)
+    return web.json_response({
+        "packs": packs,
+        "total_packs": len(packs),
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+
+
+async def handle_skills(request):
+    """Return skills and capabilities aggregated from all agent configs."""
+    configs = load_agent_configs()
+    agents = {}
+    by_skill = {}
+    for name, cfg in configs.items():
+        skills = cfg.get("skills", []) or []
+        caps = cfg.get("capabilities", []) or []
+        agents[name] = {
+            "name": name,
+            "role": cfg.get("role", ""),
+            "model": cfg.get("model", ""),
+            "skills": skills if isinstance(skills, list) else [],
+            "capabilities": caps if isinstance(caps, list) else [],
+        }
+        for skill in (skills if isinstance(skills, list) else []):
+            by_skill.setdefault(skill, []).append(name)
+    return web.json_response({
+        "agents": agents,
+        "by_skill": by_skill,
+        "total_agents": len(agents),
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+
+
+async def handle_memory(request):
+    """Return recent agent conversation entries from history JSONL."""
+    limit = int(request.query.get("limit", "100"))
+    per_agent = {}
+    HISTORY_DIR = Path("/tmp/agnetic-history")
+    if not HISTORY_DIR.exists():
+        HISTORY_DIR = Path("/tmp/starship-history")
+    if not HISTORY_DIR.exists():
+        HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    for f in sorted(HISTORY_DIR.glob("*.jsonl"), reverse=True)[:5]:
+        try:
+            with open(f) as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        agent = entry.get("subject", "unknown").split(".")[-1] or "unknown"
+                        per_agent.setdefault(agent, []).append({
+                            "timestamp": entry.get("timestamp", ""),
+                            "role": entry.get("role", entry.get("type", "")),
+                            "summary": entry.get("content", entry.get("message", ""))[:200],
+                            "command": entry.get("command", ""),
+                            "agent": agent,
+                        })
+                    except json.JSONDecodeError:
+                        continue
+        except OSError:
+            continue
+    # Sort each agent's entries by timestamp descending, limit per agent
+    for agent in per_agent:
+        per_agent[agent].sort(key=lambda e: e.get("timestamp", ""), reverse=True)
+        per_agent[agent] = per_agent[agent][:limit]
+    return web.json_response({
+        "agents": per_agent,
+        "total_entries": sum(len(v) for v in per_agent.values()),
+        "timestamp": datetime.utcnow().isoformat(),
+    })
 
 
 async def handle_marketplace_page(request):
@@ -1340,12 +1571,12 @@ app.router.add_get("/api/fleet/plants", handle_api_fleet_plants)
 app.router.add_post("/api/fleet/exercise", handle_api_fleet_exercise)
 app.router.add_post("/api/fleet/register", handle_api_fleet_register)
 app.router.add_get("/api/incidents", handle_incidents)
-app.router.add_get("/api/policy", handle_no_data)
-app.router.add_get("/api/memory", handle_no_data)
-app.router.add_get("/api/skills", handle_no_data)
+app.router.add_get("/api/policy", handle_policy)
+app.router.add_get("/api/memory", handle_memory)
+app.router.add_get("/api/skills", handle_skills)
 app.router.add_get("/api/shield/stats", handle_shield_stats)
 app.router.add_get("/api/telemetry/stats", handle_no_data)
-app.router.add_get("/api/telemetry/recent", handle_no_data)
+app.router.add_get("/api/telemetry/recent", handle_telemetry_recent)
 app.router.add_get("/api/accounts", handle_no_data)
 app.router.add_get("/api/orgchart", handle_no_data)
 app.router.add_get("/api/email/addresses", handle_no_data)

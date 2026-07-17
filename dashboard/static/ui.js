@@ -128,10 +128,10 @@ function renderView(view) {
     case 'incidents': renderIncidentsView(target); break;
     case 'connect': renderConnectView(target); break;
     case 'shield': renderShieldView(target); break;
-    case 'policy':
-    case 'memory':
-    case 'skills':
-    case 'telemetry':
+    case 'policy': renderPolicyView(target); break;
+    case 'memory': renderMemoryView(target); break;
+    case 'skills': renderSkillsView(target); break;
+    case 'telemetry': renderTelemetryView(target); break;
     case 'accounts':
     case 'email':
     case 'orgchart':

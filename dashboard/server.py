@@ -793,6 +793,24 @@ async def handle_health(request):
     online = sum(1 for v in agent_status.values() if v)
     raw = get_system_telemetry()
     tel = _normalize_telemetry(raw)
+
+    # Load health checker status if available
+    model_connectivity = {}
+    for hf in (Path("/var/lib/starship/health-status.json"), Path("/tmp/starship-health.json")):
+        if hf.exists():
+            try:
+                hc = json.loads(hf.read_text())
+                model_connectivity = {
+                    "timestamp": hc.get("timestamp"),
+                    "ollama_alive": hc.get("ollama_alive", False),
+                    "ollama_models": hc.get("ollama_models", []),
+                    "agent_model_checks": hc.get("agents", {}),
+                    "auto_recovery": hc.get("auto_recovery", {"restarts": 0, "pulls": 0}),
+                }
+            except Exception:
+                pass
+            break
+
     return web.json_response({
         "status": "healthy" if nats_ok or online else "degraded",
         "nats_connected": nats_ok,
@@ -802,6 +820,7 @@ async def handle_health(request):
         "incidents_open": 0,
         "telemetry": tel,
         "staragent_running": os.system("pgrep -x staragent > /dev/null 2>&1") == 0,
+        "model_connectivity": model_connectivity,
         "timestamp": datetime.now().isoformat(),
     })
 
@@ -1055,9 +1074,33 @@ async def handle_incidents(request):
             "timestamp": datetime.utcnow().isoformat(),
         })
 
+    # 5. Model connectivity from health checker status file
+    for hf in (Path("/var/lib/starship/health-status.json"), Path("/tmp/starship-health.json")):
+        if hf.exists():
+            try:
+                hc = json.loads(hf.read_text())
+                for inc in hc.get("incidents", []):
+                    inc["status"] = "open"
+                    inc["timestamp"] = hc.get("timestamp", datetime.utcnow().isoformat())
+                    incidents.append(inc)
+            except Exception:
+                pass
+            break
+
+    # Deduplicate by id, keep most severe
+    seen = {}
+    for inc in incidents:
+        key = inc["id"]
+        if key in seen:
+            severities = ["info", "warn", "high", "critical"]
+            if severities.index(inc.get("severity", "info")) > severities.index(seen[key].get("severity", "info")):
+                seen[key] = inc
+        else:
+            seen[key] = inc
+
     return web.json_response({
-        "incidents": incidents,
-        "total": len(incidents),
+        "incidents": list(seen.values()),
+        "total": len(seen),
         "timestamp": datetime.utcnow().isoformat(),
     })
 
@@ -1214,6 +1257,71 @@ def _skill_security_score(skill, category):
     # Add some variation by hashing skill name
     var = (hash(skill) % 10) - 5
     return max(0, min(100, score + var))
+
+
+async def handle_skills_marketplace(request):
+    """Return available skill libraries and search results."""
+    query = request.query.get("q", "").strip().lower()
+    source = request.query.get("source", "").strip()
+
+    SKILL_SOURCES = [
+        {"id": "anthropics/skills", "owner": "anthropics", "repo": "skills", "label": "Anthropic", "description": "Official Anthropic skill library for Claude AI agents", "protocol": "SKILL.md (YAML frontmatter)", "url": "https://github.com/anthropics/skills"},
+        {"id": "vercel-labs/agent-skills", "owner": "vercel-labs", "repo": "agent-skills", "label": "Vercel", "description": "Vercel agent skills for deployment, analytics, and cloud functions", "protocol": "SKILL.md", "url": "https://github.com/vercel-labs/agent-skills"},
+        {"id": "vercel-labs/skills", "owner": "vercel-labs", "repo": "skills", "label": "Vercel Labs", "description": "General-purpose skill library from Vercel Labs", "protocol": "SKILL.md", "url": "https://github.com/vercel-labs/skills"},
+        {"id": "mattpocock/skills", "owner": "mattpocock", "repo": "skills", "label": "Matt Pocock", "description": "TypeScript-focused skills and developer tools", "protocol": "SKILL.md", "url": "https://github.com/mattpocock/skills"},
+        {"id": "microsoft/azure-skills", "owner": "microsoft", "repo": "azure-skills", "label": "Microsoft Azure", "description": "Azure cloud skills for infrastructure management", "protocol": "SKILL.md", "url": "https://github.com/microsoft/azure-skills"},
+        {"id": "firebase/agent-skills", "owner": "firebase", "repo": "agent-skills", "label": "Firebase", "description": "Firebase integration skills for auth, database, and hosting", "protocol": "SKILL.md", "url": "https://github.com/firebase/agent-skills"},
+        {"id": "supabase/agent-skills", "owner": "supabase", "repo": "agent-skills", "label": "Supabase", "description": "Supabase integration skills for PostgreSQL and auth", "protocol": "SKILL.md", "url": "https://github.com/supabase/agent-skills"},
+        {"id": "sentry-devtools/skills", "owner": "sentry-devtools", "repo": "skills", "label": "Sentry", "description": "Error tracking and performance monitoring skills", "protocol": "SKILL.md", "url": "https://github.com/sentry-devtools/skills"},
+        {"id": "shadcn/ui", "owner": "shadcn", "repo": "ui", "label": "shadcn/ui", "description": "UI component library skills for design systems", "protocol": "SKILL.md", "url": "https://github.com/shadcn/ui"},
+        {"id": "scrapegraphai/just-scrape", "owner": "scrapegraphai", "repo": "just-scrape", "label": "ScrapeGraphAI", "description": "Web scraping and data extraction skills", "protocol": "SKILL.md", "url": "https://github.com/scrapegraphai/just-scrape"},
+        {"id": "heygen-com/hyperframes", "owner": "heygen-com", "repo": "hyperframes", "label": "HeyGen", "description": "Video generation and avatar skills", "protocol": "SKILL.md", "url": "https://github.com/heygen-com/hyperframes"},
+        {"id": "remotion-dev/skills", "owner": "remotion-dev", "repo": "skills", "label": "Remotion", "description": "Programmatic video rendering skills", "protocol": "SKILL.md", "url": "https://github.com/remotion-dev/skills"},
+    ]
+
+    if not query and not source:
+        return web.json_response({
+            "sources": SKILL_SOURCES,
+            "total_sources": len(SKILL_SOURCES),
+            "protocol": "SKILL.md with YAML frontmatter (name, description, version, license, tags, category, allowed-tools)",
+            "description": "Starship OS skills are SKILL.md files with YAML frontmatter defining agent capabilities. Skills can be discovered from community repos and installed via the marketplace.",
+        })
+
+    # Filter sources if specified
+    sources = [s for s in SKILL_SOURCES] if not source else [s for s in SKILL_SOURCES if s["id"] == source]
+    if not sources:
+        return web.json_response({"skills": [], "total": 0, "error": f"Unknown source: {source}"})
+
+    # Search via GitHub API
+    all_skills = []
+    for src in sources:
+        try:
+            import aiohttp as _aiohttp
+            url = f"https://api.github.com/repos/{src['owner']}/{src['repo']}/contents/"
+            async with _aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                    if resp.status == 200:
+                        items = await resp.json()
+                        for item in items:
+                            if item.get("type") == "dir":
+                                name = item["name"]
+                                if not query or query in name.lower():
+                                    all_skills.append({
+                                        "name": name,
+                                        "source": src["id"],
+                                        "label": src["label"],
+                                        "url": f"https://github.com/{src['owner']}/{src['repo']}/tree/main/{name}",
+                                        "protocol": src["protocol"],
+                                    })
+        except Exception:
+            continue
+
+    return web.json_response({
+        "skills": all_skills,
+        "total": len(all_skills),
+        "query": query,
+        "source": source or "all",
+    })
 
 
 async def handle_skill_vet(request):
@@ -1775,6 +1883,7 @@ app.router.add_get("/api/policy", handle_policy)
 app.router.add_get("/api/memory", handle_memory)
 app.router.add_get("/api/memory/graph", handle_memory_graph)
 app.router.add_get("/api/skills", handle_skills)
+app.router.add_get("/api/skills/marketplace", handle_skills_marketplace)
 app.router.add_post("/api/skills/vet/{skill}", handle_skill_vet)
 app.router.add_get("/api/shield/stats", handle_shield_stats)
 app.router.add_get("/api/telemetry/stats", handle_no_data)

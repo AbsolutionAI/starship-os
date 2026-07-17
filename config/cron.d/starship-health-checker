@@ -1,0 +1,4 @@
+# Starship OS Agent Health Checker — runs every 2 minutes
+# Install: cp this file to /etc/cron.d/starship-health-checker
+# Requires: python3, aiohttp, pyyaml
+*/2 * * * * root /usr/bin/python3 /opt/starship-os/scripts/agent-health-checker.py --once >> /var/log/starship-health.log 2>&1

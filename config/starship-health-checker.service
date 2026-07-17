@@ -1,0 +1,30 @@
+[Unit]
+Description=Starship OS Agent Health Checker — monitors agent connectivity to Ollama models
+Documentation=https://starshipos.ai/docs/health
+After=network.target ollama.service nats.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 /opt/starship-os/scripts/agent-health-checker.py
+Restart=always
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
+Environment=OLLAMA_URL=http://127.0.0.1:11434
+Environment=HEALTH_CHECK_INTERVAL=30
+Environment=HEALTH_STATUS_FILE=/var/lib/starship/health-status.json
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+AmbientCapabilities=CAP_KILL
+
+[Install]
+WantedBy=multi-user.target

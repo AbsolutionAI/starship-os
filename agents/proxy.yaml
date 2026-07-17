@@ -36,6 +36,8 @@ toolsets:
   - planning
   - coding
   - design
+  - opencode
+  - open-design
 
 nats:
   subjects:
